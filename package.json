@@ -9,6 +9,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "new": "node scripts/new-post.mjs",
+    "memo": "node scripts/new-memo.mjs",
     "astro": "astro"
   },
   "dependencies": {

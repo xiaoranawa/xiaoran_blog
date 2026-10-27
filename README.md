@@ -10,11 +10,13 @@
 | `npm run dev` | 本地预览，打开 http://localhost:4321 |
 | `npm run build` | 构建到 `dist/` |
 | `npm run preview` | 预览构建结果 |
+| `npm run new 标题 [网址名]` | 新建一篇文章，自动填好标题和时间 |
+| `npm run memo 内容` | 发一条闲言，自动填好时间 |
 
 ## 写东西
 
-- **文章**：`src/content/posts/*.md`，frontmatter 写 `title`、`date`，可选 `description`、`cover`、`slug`、`updated`、`draft`。没有分类和标签。
-- **闲言**：`src/data/memos.yaml`，一条一项，`content` 支持 Markdown，加 `draft: true` 只在本地显示。每页条数在 `src/config.ts` 的 `site.memosPerPage`。- **友链**：`src/data/friends.ts`。
+- **文章**：`src/content/posts/*.md`，frontmatter 写 `title`、`date`，可选 `description`、`cover`、`slug`、`updated`、`draft`。没有分类和标签。用 `npm run new 标题 网址名` 生成会自动填好标题和时间，网址名不写时英文标题会转成网址名，中文标题就用当前时间。
+- **闲言**：`src/data/memos.yaml`，一条一项，`content` 支持 Markdown，加 `draft: true` 只在本地显示。短的用 `npm run memo 内容` 直接发，会自动接在文件末尾。每页条数在 `src/config.ts` 的 `site.memosPerPage`。- **友链**：`src/data/friends.ts`。
 - **关于**：`src/pages/about.md`。
 
 ## 改配置

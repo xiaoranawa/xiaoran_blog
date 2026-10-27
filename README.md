@@ -25,7 +25,9 @@
 
 域名 `https://blog.xiaoowo.top` 写在 `astro.config.mjs` 的 `site` 里。
 
-### 开启评论（Giscus）
+### 评论（Giscus）
+
+已经接好了，评论存在本仓库 `xiaoranawa/xiaoran_blog` 的 Discussions 里，分类是 Announcements。换仓库的话按下面重新弄一遍：
 
 1. 准备一个公开的 GitHub 仓库，在仓库 Settings 里勾上 Discussions；
 2. 安装 [giscus 应用](https://github.com/apps/giscus) 并授权这个仓库；
@@ -41,7 +43,7 @@
 - 欢迎来访卡片：显示访客来自哪里、离博主多远、当地的梗，可以展开看 IP 和运营商
 - 窄一点的屏幕右栏会排到正文下面；手机端导航收进左上角抽屉，所有卡片排到正文后面
 - 回到顶部：宽屏是右边吊着的小猫，往下滚一点就会垂下来；窄屏和手机是右下角的小按钮
-- 评论：Giscus，填好配置才会出现
+- 评论：Giscus，每篇文章底下，访客用 GitHub 登录就能评论，跟着网站深浅色变
 - 朋友圈：汇总订阅博客的最新文章（钓鱼随机抽一篇、鱼塘卡片、再来亿点）。数据来自 `rss-server` 文件夹里的 Go 服务，部署方法见那里的 README；订阅列表在它的 `config.json`，默认是空的
 - Cookie 提示：左下角，点过「知道了」就不再出现
 - 左侧栏底部徽章：萌备「异次元之旅」动图（配色在 `badges.travel.color` 改）和无聊湾，手机上在左上角菜单里

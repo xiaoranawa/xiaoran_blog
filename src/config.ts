@@ -147,10 +147,10 @@ export const copyTip = '复制成功，复制和转载请标注本文地址';
 // 评论用 Giscus，评论存在 GitHub Discussions 里。到 https://giscus.app 填好仓库，
 // 把生成的 repo、repoId、category、categoryId 抄过来；没填全就不显示评论区
 export const comments = {
-  repo: '', // 比如 'xiaoranawa/blog'，要是公开仓库，并且开了 Discussions、装了 giscus 应用
-  repoId: '',
+  repo: 'xiaoranawa/xiaoran_blog', // 要是公开仓库，并且开了 Discussions、装了 giscus 应用
+  repoId: 'R_kgDOVXtQYQ',
   category: 'Announcements',
-  categoryId: '',
+  categoryId: 'DIC_kwDOVXtQYc4DJvrc',
 };
 
 // 朋友圈的数据接口，就是 rss-server 文件夹里那个 Go 服务，订阅哪些博客在它的 config.json 里配

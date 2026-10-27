@@ -36,7 +36,11 @@ const external = (href: string) => (href.startsWith('http') ? '_blank' : undefin
 
   <div class="footer-bar">
     <div class="footer-bar-inner">
-      <div class="fb-copy">©{years} By <a href="/about/">{site.author}</a></div>
+      <div class="fb-copy">
+        ©{years} By <a href="/about/">{site.author}</a>
+        <span class="fb-sep" aria-hidden="true">|</span>
+        由 <a href="https://astro.build" target="_blank" rel="noopener"><Icon name="brand-astro" /> Astro</a> 驱动
+      </div>
       <div class="fb-right">
         <a class="fb-icp" href={footer.icp.href} target="_blank" rel="noopener">
           <MoeIcon size="1.15em" />
@@ -162,6 +166,11 @@ const external = (href: string) => (href.startsWith('http') ? '_blank' : undefin
   .fb-copy a:hover,
   .fb-icp:hover {
     color: var(--c-accent);
+  }
+
+  .fb-sep {
+    margin: 0 8px;
+    color: var(--c-text-3);
   }
 
   .fb-right {

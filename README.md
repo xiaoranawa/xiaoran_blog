@@ -21,7 +21,7 @@
 
 所有可调项都在 `src/config.ts`：站名、头像、建站日期、导航、页脚按钮、萌备案号、许可协议、背景图 API 和模糊度、倒计时节日、欢迎框的来源网站名称和时间段文案、博主所在城市、评论、访问统计脚本。各地的梗和城市坐标在 `src/data/places.ts`。
 
-域名 `https://blog.xiaoowo.top` 写在 `astro.config.mjs` 的 `site` 里。上线前记得把 `src/config.ts` 里 `footerLinks` 的邮箱换成自己的。
+域名 `https://blog.xiaoowo.top` 写在 `astro.config.mjs` 的 `site` 里。
 
 ### 开启评论（Giscus）
 

@@ -50,7 +50,7 @@ export const badges = {
 // 页脚头像两侧的圆形按钮，邮箱记得改成自己的
 export const footerLinks = {
   left: [
-    { name: '邮箱', href: 'mailto:you@example.com', icon: 'mail' },
+    { name: '邮箱', href: 'mailto:351932317@qq.com', icon: 'mail' },
     { name: '订阅', href: '/rss.xml', icon: 'rss' },
   ],
   right: [

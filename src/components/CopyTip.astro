@@ -1,8 +1,20 @@
 ---
 import { copyTip } from '../config';
+
+const duration = 2500;
 ---
 
-<div class="copy-tip" id="copy-tip" transition:persist role="status" aria-live="polite">{copyTip}</div>
+<div
+  class="copy-tip"
+  id="copy-tip"
+  transition:persist
+  role="status"
+  aria-live="polite"
+  data-duration={duration}
+  style={`--copy-tip-duration: ${duration}ms`}
+>
+  {copyTip}
+</div>
 
 <style is:global>
   /* 顶部整条的复制提示，颜色跟着背景图的主色调走 */
@@ -13,7 +25,7 @@ import { copyTip } from '../config';
     right: 0;
     z-index: 110;
     padding: 13px 16px;
-    background: hsl(var(--tint-h) calc(var(--tint-s) * 0.8) 46% / 0.92);
+    background: var(--c-bar);
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
     box-shadow: var(--shadow-2);
@@ -34,8 +46,25 @@ import { copyTip } from '../config';
     transition: transform 0.35s ease;
   }
 
-  :root[data-theme='dark'] .copy-tip {
-    background: hsl(var(--tint-h) calc(var(--tint-s) * 0.6) 30% / 0.92);
+  /* 倒计时进度条，和异次元跳转横幅一样：从左往右变亮的那一截，垫在文字下面 */
+  .copy-tip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgb(255 255 255 / 0.18);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .copy-tip.counting::before {
+    animation: copy-tip-progress var(--copy-tip-duration) linear forwards;
+  }
+
+  @keyframes copy-tip-progress {
+    to {
+      transform: scaleX(1);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -56,13 +85,17 @@ import { copyTip } from '../config';
 
 <script>
   const tip = document.getElementById('copy-tip')!;
+  const duration = Number(tip.dataset.duration);
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  // 连着复制会重新计时
+  // 连着复制会重新计时，进度条也从头走
   function show() {
     tip.classList.add('show');
+    tip.classList.remove('counting');
+    void tip.offsetWidth; // 读一下尺寸，动画才会重新开始
+    tip.classList.add('counting');
     clearTimeout(timer);
-    timer = setTimeout(() => tip.classList.remove('show'), 2500);
+    timer = setTimeout(() => tip.classList.remove('show', 'counting'), duration);
   }
 
   document.addEventListener('copy', (e) => {

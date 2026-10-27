@@ -3,6 +3,7 @@ import type { MarkdownHeading } from 'astro';
 import { ClientRouter } from 'astro:transitions';
 import Background from '../components/Background.astro';
 import CookieNotice from '../components/CookieNotice.astro';
+import CopyTip from '../components/CopyTip.astro';
 import Footer from '../components/Footer.astro';
 import Icon from '../components/Icon.astro';
 import Rightside from '../components/Rightside.astro';
@@ -94,12 +95,14 @@ const hasToc = headings.some((h) => h.depth >= 2 && h.depth <= 4);
     <SearchModal />
     <WelcomeToast />
     <TimeTip />
+    <CopyTip />
     <CookieNotice />
     <div class="drawer-mask" data-drawer-close></div>
     <template id="tpl-copy"><Icon name="copy" /></template>
     <template id="tpl-check"><Icon name="check" /></template>
     <script>
       import '../scripts/ui';
+      import '../scripts/console-banner';
     </script>
   </body>
 </html>

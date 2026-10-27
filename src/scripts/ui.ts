@@ -72,6 +72,7 @@ function enhanceCode() {
     btn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText);
+        document.dispatchEvent(new Event('copied'));
         btn.classList.add('copied');
         btn.replaceChildren(doneIcon?.content.cloneNode(true) ?? '✓');
         setTimeout(() => {

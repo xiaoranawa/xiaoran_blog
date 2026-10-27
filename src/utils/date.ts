@@ -19,3 +19,9 @@ export function monthKey(d: Date) {
 export function formatNumber(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
+
+// 从 YYYY-MM-DD 那天到今天是第几天，按访客本地时间算，当天算第 1 天
+export function daysSince(day: string) {
+  const start = new Date(`${day}T00:00:00`).getTime();
+  return Math.max(1, Math.floor((Date.now() - start) / 86400000) + 1);
+}

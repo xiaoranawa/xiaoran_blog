@@ -110,11 +110,11 @@ const last = Math.max(0, ...posts.map((p) => (p.data.updated ?? p.data.date).val
 
 <script>
   import { counterScript } from '../../config';
+  import { daysSince } from '../../utils/date';
 
   document.addEventListener('astro:page-load', () => {
     document.querySelectorAll<HTMLElement>('[data-site-since]').forEach((el) => {
-      const start = new Date(`${el.dataset.siteSince}T00:00:00`);
-      el.textContent = String(Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000) + 1));
+      el.textContent = String(daysSince(el.dataset.siteSince ?? ''));
     });
     // 每次换页都重新加载统计脚本，访问量才会累加
     document.getElementById('counter-script')?.remove();

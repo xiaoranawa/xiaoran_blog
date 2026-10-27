@@ -141,6 +141,9 @@ export const timeTip = {
   ],
 };
 
+// 复制文字或代码后，顶部滑下来的提示
+export const copyTip = '复制成功，复制和转载请标注本文地址';
+
 // 评论用 Giscus，评论存在 GitHub Discussions 里。到 https://giscus.app 填好仓库，
 // 把生成的 repo、repoId、category、categoryId 抄过来；没填全就不显示评论区
 export const comments = {

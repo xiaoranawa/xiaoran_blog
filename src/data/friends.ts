@@ -8,8 +8,15 @@ export interface Friend {
 export const friendGroups: { title: string; desc?: string; items: Friend[] }[] = [
   {
     title: '朋友们',
-    desc: '还没有朋友，欢迎来交换友链～',
-    items: [],
+    desc: '欢迎来交换友链～',
+    items: [
+      {
+        name: 'Mo的记事簿',
+        url: 'https://blog.xiowo.net/',
+        avatar: 'https://blog.xiowo.net/img/avatar.png',
+        desc: '万年鸽王，哈哈OvO',
+      },
+    ],
   },
   {
     title: '设计参考',

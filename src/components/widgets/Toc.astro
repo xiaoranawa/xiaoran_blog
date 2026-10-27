@@ -1,0 +1,144 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Icon from '../Icon.astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+const items = Astro.props.headings.filter((h) => h.depth >= 2 && h.depth <= 4);
+const top = Math.min(...items.map((h) => h.depth));
+---
+
+{
+  items.length > 0 && (
+    <section class="widget toc" id="toc">
+      <div class="widget-title">
+        <Icon name="list-details" /> 目录
+        <button class="more toc-close" type="button" data-toc-toggle aria-label="关闭目录">
+          <Icon name="x" />
+        </button>
+      </div>
+      <ol class="toc-list">
+        {items.map((h) => (
+          <li style={`--depth:${h.depth - top}`}>
+            <a href={`#${h.slug}`} data-toc-link={h.slug}>
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+<style is:global>
+  .toc-list {
+    max-height: 45vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    font-size: 13.5px;
+  }
+
+  .toc-list a {
+    display: block;
+    padding: 3px 8px 3px calc(8px + var(--depth) * 14px);
+    border-left: 2px solid var(--c-border-soft);
+    color: var(--c-text-2);
+    line-height: 1.5;
+    transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+  }
+
+  .toc-list a:hover {
+    color: var(--c-text);
+    background: var(--c-soft);
+  }
+
+  .toc-list a.active {
+    color: var(--c-accent);
+    border-left-color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  .toc-close {
+    display: none;
+  }
+
+  /* 没有右栏时，目录变成右下角弹出的面板 */
+  @media (max-width: 1199px) {
+    .toc {
+      position: fixed;
+      right: 12px;
+      bottom: 128px;
+      z-index: 45;
+      width: min(300px, calc(100vw - 24px));
+      background: var(--c-panel-solid) !important;
+      box-shadow: var(--shadow-2) !important;
+      display: none;
+    }
+
+    :root.toc-open .toc {
+      display: block;
+    }
+
+    .toc-list {
+      max-height: 55vh;
+    }
+
+    .toc-close {
+      display: grid;
+    }
+  }
+</style>
+
+<script>
+  let stop: (() => void) | undefined;
+
+  document.addEventListener('astro:page-load', () => {
+    stop?.();
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')];
+    const list = document.querySelector<HTMLElement>('.toc-list');
+    if (!links.length || !list) return;
+    const heads = links.map((a) => document.getElementById(a.dataset.tocLink!)).filter((h) => h !== null);
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      let current = heads[0];
+      for (const h of heads) {
+        if (h.getBoundingClientRect().top > 100) break;
+        current = h;
+      }
+      let active: HTMLAnchorElement | undefined;
+      for (const a of links) {
+        const on = a.dataset.tocLink === current?.id;
+        a.classList.toggle('active', on);
+        if (on) active = a;
+      }
+      // 只滚动目录自己，不带动整个页面
+      if (active) {
+        const box = list.getBoundingClientRect();
+        const item = active.getBoundingClientRect();
+        if (item.top < box.top + 24 || item.bottom > box.bottom - 24) {
+          list.scrollTop += item.top - box.top - box.height / 3;
+        }
+      }
+    };
+    const onScroll = () => (frame ||= requestAnimationFrame(update));
+
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element).closest<HTMLAnchorElement>('[data-toc-link]');
+      const target = a && document.getElementById(a.dataset.tocLink!);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(history.state, '', `#${encodeURIComponent(target.id)}`);
+      document.documentElement.classList.remove('toc-open');
+    };
+
+    addEventListener('scroll', onScroll, { passive: true });
+    list.addEventListener('click', onClick);
+    update();
+    stop = () => removeEventListener('scroll', onScroll);
+  });
+</script>

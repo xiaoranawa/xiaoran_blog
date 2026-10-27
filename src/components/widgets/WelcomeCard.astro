@@ -1,0 +1,253 @@
+---
+import { welcome } from '../../config';
+import Icon from '../Icon.astro';
+---
+
+<section
+  class="widget wc"
+  transition:persist="welcome-card"
+  data-home={JSON.stringify(welcome.home)}
+  data-greetings={JSON.stringify(welcome.greetings)}
+>
+  <div class="widget-title"><Icon name="map-pin" /> 欢迎来访</div>
+  <div class="wc-lines">
+    <p>欢迎你~</p>
+    <p data-wc-from>来自远方的朋友</p>
+    <p data-wc-distance hidden></p>
+    <p data-wc-greet></p>
+  </div>
+  <p class="wc-meme" data-wc-meme hidden></p>
+  <details class="wc-details" data-wc-details hidden>
+    <summary>
+      <span class="wc-open-text">收起来访详情</span>
+      <span class="wc-closed-text">展开来访详情</span>
+      <Icon name="chevron-down" />
+    </summary>
+    <dl>
+      <dt>IP</dt>
+      <dd data-wc-ip>-</dd>
+      <dt>地址</dt>
+      <dd data-wc-addr>-</dd>
+      <dt>运营商</dt>
+      <dd data-wc-isp>-</dd>
+    </dl>
+  </details>
+</section>
+
+<style is:global>
+  .wc-lines {
+    display: grid;
+    gap: 2px;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+
+  .wc-lines b {
+    color: var(--c-accent);
+  }
+
+  .wc-meme {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--c-border);
+    color: var(--c-accent);
+    font-size: 14px;
+  }
+
+  .wc-details {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+
+  .wc-details summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 0;
+    color: var(--c-text-3);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+
+  .wc-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .wc-details summary:hover {
+    color: var(--c-text-2);
+  }
+
+  .wc-details summary .icon {
+    transition: transform 0.2s;
+  }
+
+  .wc-details[open] summary .icon {
+    transform: rotate(180deg);
+  }
+
+  .wc-details:not([open]) .wc-open-text,
+  .wc-details[open] .wc-closed-text {
+    display: none;
+  }
+
+  .wc-details dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 16px;
+    margin: 6px 0 0;
+  }
+
+  .wc-details dt {
+    color: var(--c-text-3);
+  }
+
+  .wc-details dd {
+    margin: 0;
+    font-weight: 600;
+    word-break: break-all;
+  }
+</style>
+
+<script>
+  import { capitals, coords, defaultMemes, memes } from '../../data/places';
+
+  interface Visitor {
+    ip?: string;
+    country: string;
+    province?: string;
+    city?: string;
+    isp?: string;
+    lat?: number;
+    lng?: number;
+  }
+
+  type Greeting = { from: number; to: number; text: string };
+
+  async function getJson(url: string) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) throw new Error(String(res.status));
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const trim = (s?: string) => s?.replace(/(省|市|特别行政区|壮族自治区|回族自治区|维吾尔自治区|自治区)$/, '') || undefined;
+
+  const ISPS: [RegExp, string][] = [
+    [/mobile|移动/i, '移动'],
+    [/unicom|联通/i, '联通'],
+    [/telecom|电信/i, '电信'],
+    [/cernet|edu|教育/i, '教育网'],
+    [/broadnet|广电/i, '广电'],
+  ];
+  const ispName = (s = '') => ISPS.find(([re]) => re.test(s))?.[1] ?? (s || undefined);
+
+  // 几个免费的 IP 定位接口，前一个失败就换下一个
+  const providers: (() => Promise<Visitor>)[] = [
+    async () => {
+      const { data } = await getJson('https://myip.ipip.net/json');
+      const [country, province, city, , isp] = data.location as string[];
+      return { ip: data.ip, country, province: province || undefined, city: city || undefined, isp: ispName(isp) };
+    },
+    async () => {
+      const d = await getJson('https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=zh');
+      return { country: d.countryName, province: trim(d.principalSubdivision), city: trim(d.city), lat: d.latitude, lng: d.longitude };
+    },
+    async () => {
+      const d = await getJson('https://api.ip.sb/geoip');
+      const country = d.country_code ? (new Intl.DisplayNames(['zh-CN'], { type: 'region' }).of(d.country_code) ?? d.country) : d.country;
+      return { ip: d.ip, country, province: d.region, city: d.city, isp: ispName(d.isp), lat: d.latitude, lng: d.longitude };
+    },
+  ];
+
+  async function locate(): Promise<Visitor | null> {
+    try {
+      const cached = sessionStorage.getItem('visitor');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    for (const provider of providers) {
+      try {
+        const visitor = await provider();
+        if (!visitor.country) continue;
+        try {
+          sessionStorage.setItem('visitor', JSON.stringify(visitor));
+        } catch {}
+        return visitor;
+      } catch {}
+    }
+    return null;
+  }
+
+  function memeFor(v: Visitor) {
+    const china = v.country === '中国';
+    const entry = memes[(china && v.province) || v.country];
+    if (typeof entry === 'string') return entry;
+    if (entry) return (v.city && entry[v.city]) || entry._;
+    return china ? defaultMemes.china : defaultMemes.abroad;
+  }
+
+  function distanceKm([lat1, lng1]: [number, number], [lat2, lng2]: [number, number]) {
+    const rad = Math.PI / 180;
+    const a =
+      Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
+      Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
+    return 6371 * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  // 接口给了经纬度就直接用，没给就按城市、再按省会查表
+  function position(v: Visitor): [number, number] | undefined {
+    if (v.lat != null && v.lng != null) return [v.lat, v.lng];
+    if (v.country !== '中国') return undefined;
+    return (v.city && coords[v.city]) || (v.province && (coords[v.province] ?? coords[capitals[v.province]])) || undefined;
+  }
+
+  function strong(text: string) {
+    const b = document.createElement('b');
+    b.textContent = text;
+    return b;
+  }
+
+  function render(card: HTMLElement, v: Visitor | null) {
+    const $ = (sel: string) => card.querySelector<HTMLElement>(sel)!;
+    const hour = new Date().getHours();
+    const greetings: Greeting[] = JSON.parse(card.dataset.greetings || '[]');
+    $('[data-wc-greet]').textContent = greetings.find((g) => hour >= g.from && hour < g.to)?.text ?? '';
+    if (!v) return;
+
+    const china = v.country === '中国';
+    const place = [...new Set(china ? [v.province, v.city] : [v.country, v.city])].filter(Boolean).join(' ');
+    $('[data-wc-from]').replaceChildren('来自 ', strong(place), ' 的朋友');
+
+    const home = JSON.parse(card.dataset.home || 'null');
+    const here = position(v);
+    if (home && here) {
+      const km = Math.round(distanceKm(here, [home.lat, home.lng]));
+      const line = $('[data-wc-distance]');
+      if (km < 20) line.textContent = '你和博主在同一座城市哦~';
+      else line.replaceChildren('你距离博主约 ', strong(km.toLocaleString()), ' 公里');
+      line.hidden = false;
+    }
+
+    const meme = $('[data-wc-meme]');
+    meme.textContent = memeFor(v);
+    meme.hidden = false;
+
+    $('[data-wc-ip]').textContent = v.ip ?? '-';
+    $('[data-wc-addr]').textContent = [...new Set([v.country, v.province, v.city])].filter(Boolean).join(' · ');
+    $('[data-wc-isp]').textContent = v.isp ?? '-';
+    $('[data-wc-details]').hidden = false;
+  }
+
+  // 卡片换页时会保留，所以只在进站时查一次
+  const card = document.querySelector<HTMLElement>('.wc');
+  if (card) {
+    render(card, null);
+    locate().then((v) => render(card, v));
+  }
+</script>

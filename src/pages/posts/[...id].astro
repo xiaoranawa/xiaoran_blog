@@ -1,0 +1,210 @@
+---
+import { render } from 'astro:content';
+import Comments from '../../components/Comments.astro';
+import Icon from '../../components/Icon.astro';
+import { footer, site } from '../../config';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/markdown.css';
+import { ymd } from '../../utils/date';
+import { getPosts, type Post } from '../../utils/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post, i) => ({
+    params: { id: post.id },
+    props: { post, newer: posts[i - 1], older: posts[i + 1] },
+  }));
+}
+
+interface Props {
+  post: Post;
+  newer?: Post;
+  older?: Post;
+}
+
+const { post, newer, older } = Astro.props;
+const { title, date, updated, cover } = post.data;
+const { Content, headings } = await render(post);
+const link = new URL(post.url, Astro.site).href;
+---
+
+<BaseLayout title={title} description={post.excerpt} image={cover} headings={headings}>
+  <article class="card post">
+    {cover && <img class="post-cover" src={cover} alt="" />}
+    <header class="post-header">
+      <h1 class="post-title">{title}</h1>
+      <div class="post-meta">
+        <span><Icon name="calendar" /> 发表于 <time datetime={date.toISOString()}>{ymd(date)}</time></span>
+        {updated && <span><Icon name="history" /> 更新于 <time datetime={updated.toISOString()}>{ymd(updated)}</time></span>}
+        <span><Icon name="file-text" /> {post.words} 字</span>
+        <span><Icon name="clock" /> 约 {post.minutes} 分钟</span>
+        <span><Icon name="eye" /> <span id="busuanzi_value_page_pv">-</span> 次阅读</span>
+      </div>
+    </header>
+    <div class="markdown-body post-content">
+      <Content />
+    </div>
+    <footer class="post-copyright">
+      <p><b>本文作者：</b>{site.author}</p>
+      <p><b>本文链接：</b><a href={post.url}>{link}</a></p>
+      <p>
+        <b>版权声明：</b>除特别声明外，本站文章均采用
+        <a href={footer.license.href} target="_blank" rel="license noopener">{footer.license.name}</a>
+        许可协议，转载请注明出处。
+      </p>
+    </footer>
+  </article>
+
+  {
+    (newer || older) && (
+      <nav class="post-nav">
+        {newer ? (
+          <a class="card" href={newer.url}>
+            <span>
+              <Icon name="chevron-left" /> 上一篇
+            </span>
+            {newer.data.title}
+          </a>
+        ) : (
+          <span />
+        )}
+        {older && (
+          <a class="card next" href={older.url}>
+            <span>
+              下一篇 <Icon name="chevron-right" />
+            </span>
+            {older.data.title}
+          </a>
+        )}
+      </nav>
+    )
+  }
+
+  <Comments />
+</BaseLayout>
+
+<style is:global>
+  .post {
+    overflow: hidden;
+  }
+
+  .post-cover {
+    display: block;
+    width: 100%;
+    max-height: 340px;
+    object-fit: cover;
+  }
+
+  .post-header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--c-border-soft);
+  }
+
+  .post-title {
+    font-family: var(--font-title);
+    font-size: 1.9rem;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .post-meta {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    font-size: 13px;
+    color: var(--c-text-2);
+  }
+
+  .post-meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .post-content {
+    padding: 24px 32px 32px;
+  }
+
+  .post-copyright {
+    position: relative;
+    margin: 0 32px 32px;
+    padding: 14px 18px;
+    border: 1px solid var(--c-border-soft);
+    border-left: 4px solid var(--c-accent);
+    border-radius: 8px;
+    background: var(--c-soft);
+    font-size: 13.5px;
+    color: var(--c-text-2);
+    display: grid;
+    gap: 4px;
+  }
+
+  .post-copyright a {
+    color: var(--c-accent);
+    word-break: break-all;
+  }
+
+  .post-copyright b {
+    color: var(--c-text);
+  }
+
+  .post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap);
+  }
+
+  .post-nav a {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 18px;
+    font-weight: 600;
+    transition: border-color 0.2s;
+  }
+
+  .post-nav a:hover {
+    border-color: var(--c-accent);
+  }
+
+  .post-nav a > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--c-text-3);
+  }
+
+  .post-nav .next {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  @media (max-width: 640px) {
+    .post-header {
+      padding: 20px 18px 16px;
+    }
+
+    .post-title {
+      font-size: 1.5rem;
+    }
+
+    .post-content {
+      padding: 18px 18px 24px;
+    }
+
+    .post-copyright {
+      margin: 0 18px 20px;
+    }
+
+    .post-nav {
+      grid-template-columns: 1fr;
+    }
+
+    .post-nav > span:empty {
+      display: none;
+    }
+  }
+</style>

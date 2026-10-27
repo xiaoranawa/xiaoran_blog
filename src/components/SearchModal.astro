@@ -1,0 +1,298 @@
+---
+import Icon from './Icon.astro';
+---
+
+<div class="search" id="search" hidden>
+  <div class="search-mask" data-search-close></div>
+  <div class="search-box" role="dialog" aria-modal="true" aria-labelledby="search-title">
+    <div class="search-head">
+      <h2 class="search-title" id="search-title">搜索</h2>
+      <button class="icon-btn" type="button" data-search-close aria-label="关闭">
+        <Icon name="x" size={20} />
+      </button>
+    </div>
+    <input class="search-input" type="search" placeholder="搜索文章标题或内容…" autocomplete="off" spellcheck="false" />
+    <div class="search-divider"></div>
+    <ul class="search-results" role="listbox"></ul>
+    <p class="search-tip" data-search-tip>输入关键字以搜索全站文章</p>
+  </div>
+</div>
+
+<style is:global>
+  .search {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 12vh 16px 16px;
+  }
+
+  .search[hidden] {
+    display: none;
+  }
+
+  .search-mask {
+    position: absolute;
+    inset: 0;
+    background: rgb(1 4 9 / 0.4);
+    backdrop-filter: blur(2px);
+  }
+
+  .search-box {
+    position: relative;
+    width: min(880px, 100%);
+    max-height: 76vh;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 22px 20px;
+    border: 1px solid var(--c-border);
+    border-radius: 16px;
+    background: var(--c-panel-solid);
+    box-shadow: var(--shadow-2);
+    animation: search-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes search-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+    }
+  }
+
+  .search-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .search-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--c-accent);
+  }
+
+  .search-input {
+    width: 100%;
+    height: 42px;
+    padding: 0 20px;
+    border: 2px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+    border-radius: 999px;
+    background: var(--c-widget);
+    font-size: 15px;
+    color: var(--c-text);
+    outline: none;
+    transition:
+      border-color 0.25s,
+      box-shadow 0.25s;
+  }
+
+  .search-input:focus {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 4px var(--c-accent-soft);
+  }
+
+  .search-input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .search-divider {
+    height: 1px;
+    margin: 18px 0 6px;
+    background: var(--c-border-soft);
+  }
+
+  .search-results {
+    overflow-y: auto;
+    margin: 0 -8px;
+  }
+
+  .search-results a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .search-results li.active a {
+    background: var(--c-accent-soft);
+  }
+
+  .sr-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 600;
+  }
+
+  .sr-title time {
+    flex: none;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--c-text-3);
+  }
+
+  .sr-snippet {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--c-text-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .search-results mark {
+    background: none;
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  .search-tip {
+    padding: 36px 12px 18px;
+    text-align: center;
+    color: var(--c-text-2);
+  }
+
+  .search-tip[hidden] {
+    display: none;
+  }
+</style>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+
+  type Doc = { title: string; url: string; date: string; text: string };
+  type Hit = Doc & { score: number };
+
+  let index: Promise<Doc[]> | undefined;
+  let hits: Hit[] = [];
+  let current = 0;
+
+  const loadIndex = () => (index ??= fetch('/search.json').then((r) => r.json() as Promise<Doc[]>));
+  const box = () => document.getElementById('search');
+  const input = () => box()?.querySelector<HTMLInputElement>('.search-input');
+  const isOpen = () => box()?.hidden === false;
+
+  const escapeHtml = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  function highlight(text: string, terms: string[]) {
+    const re = new RegExp(`(${terms.map(escapeRe).join('|')})`, 'gi');
+    return text
+      .split(re)
+      .map((part, i) => (i % 2 ? `<mark>${escapeHtml(part)}</mark>` : escapeHtml(part)))
+      .join('');
+  }
+
+  function snippet(text: string, terms: string[]) {
+    const lower = text.toLowerCase();
+    const at = Math.min(...terms.map((t) => lower.indexOf(t)).filter((i) => i >= 0));
+    if (!Number.isFinite(at)) return text.slice(0, 100);
+    const start = Math.max(0, at - 30);
+    return (start > 0 ? '…' : '') + text.slice(start, at + 90);
+  }
+
+  function render(terms: string[]) {
+    const list = box()?.querySelector('.search-results');
+    const tip = box()?.querySelector<HTMLElement>('[data-search-tip]');
+    if (!list || !tip) return;
+    tip.hidden = terms.length > 0 && hits.length > 0;
+    tip.textContent = terms.length ? '没有找到相关文章' : '输入关键字以搜索全站文章';
+    list.innerHTML = hits
+      .map(
+        (h, i) => `<li class="${i === current ? 'active' : ''}" role="option">
+          <a href="${h.url}">
+            <div class="sr-title"><span>${highlight(h.title, terms)}</span><time>${h.date}</time></div>
+            <div class="sr-snippet">${highlight(snippet(h.text, terms), terms)}</div>
+          </a></li>`,
+      )
+      .join('');
+  }
+
+  async function search(query: string) {
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const docs = await loadIndex();
+    hits = terms.length
+      ? docs
+          .map((d) => {
+            const title = d.title.toLowerCase();
+            const text = d.text.toLowerCase();
+            if (!terms.every((t) => title.includes(t) || text.includes(t))) return null;
+            const score = terms.reduce((s, t) => s + (title.includes(t) ? 10 : 0) + text.split(t).length - 1, 0);
+            return { ...d, score };
+          })
+          .filter((h): h is Hit => h !== null)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 20)
+      : [];
+    current = 0;
+    render(terms);
+  }
+
+  function move(step: number) {
+    const items = box()?.querySelectorAll('.search-results li[role=option]');
+    if (!items?.length) return;
+    items[current]?.classList.remove('active');
+    current = (current + step + items.length) % items.length;
+    items[current].classList.add('active');
+    items[current].scrollIntoView({ block: 'nearest' });
+  }
+
+  function open() {
+    const el = box();
+    if (!el) return;
+    el.hidden = false;
+    input()?.focus();
+    input()?.select();
+    loadIndex();
+  }
+
+  function close() {
+    const el = box();
+    if (el) el.hidden = true;
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as Element;
+    if (target.closest('[data-search-open]')) {
+      document.documentElement.classList.remove('drawer-open');
+      open();
+    } else if (target.closest('[data-search-close]') || target.closest('.search-results a')) {
+      close();
+    }
+  });
+
+  document.addEventListener('input', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.matches('.search-input')) search(target.value);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const typing = (e.target as Element).closest('input, textarea, [contenteditable]');
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      isOpen() ? close() : open();
+    } else if (e.key === '/' && !typing && !isOpen()) {
+      e.preventDefault();
+      open();
+    } else if (isOpen()) {
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowDown') (e.preventDefault(), move(1));
+      else if (e.key === 'ArrowUp') (e.preventDefault(), move(-1));
+      else if (e.key === 'Enter' && hits[current]) {
+        e.preventDefault();
+        close();
+        navigate(hits[current].url);
+      }
+    }
+  });
+
+  document.addEventListener('astro:page-load', () => {
+    if (/Mac|iPhone|iPad/.test(navigator.platform)) {
+      document.querySelectorAll('[data-search-kbd]').forEach((el) => (el.textContent = '⌘ K'));
+    }
+  });
+</script>

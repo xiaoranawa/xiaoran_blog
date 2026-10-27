@@ -1,0 +1,128 @@
+---
+import { render } from 'astro:content';
+import { site } from '../config';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/markdown.css';
+import { hm, ymd } from '../utils/date';
+import { getMemos } from '../utils/memos';
+import Icon from './Icon.astro';
+import Pagination from './Pagination.astro';
+
+interface Props {
+  page: number;
+}
+
+const { page } = Astro.props;
+const memos = await getMemos();
+const total = Math.max(1, Math.ceil(memos.length / site.memosPerPage));
+const list = memos.slice((page - 1) * site.memosPerPage, page * site.memosPerPage);
+const items = await Promise.all(list.map(async (memo) => ({ memo, ...(await render(memo)) })));
+---
+
+<BaseLayout title={page > 1 ? `闲言 · 第 ${page} 页` : '闲言'} description="一些碎碎念">
+  <section class="card page-head">
+    <h1 class="page-title"><Icon name="bubble-text" /> 闲言</h1>
+    <p class="page-desc">不成文章的碎碎念。</p>
+  </section>
+
+  <div class="memos">
+    {
+      items.map(({ memo, Content }) => (
+        <article class="memo">
+          <img class="memo-avatar" src={site.avatar} alt="" width="40" height="40" loading="lazy" />
+          <div class="memo-box card">
+            <div class="memo-head">
+              <b>{site.author}</b>
+              <time datetime={memo.data.date.toISOString()}>
+                {ymd(memo.data.date)} {hm(memo.data.date)}
+              </time>
+            </div>
+            <div class="markdown-body memo-body">
+              <Content />
+            </div>
+          </div>
+        </article>
+      ))
+    }
+    {items.length === 0 && <p class="card empty">还没有闲言</p>}
+  </div>
+
+  {
+    total > 1 && (
+      <div class="card memos-pager">
+        <Pagination current={page} total={total} base="/memos/" />
+      </div>
+    )
+  }
+</BaseLayout>
+
+<style is:global>
+  .memos {
+    display: grid;
+    gap: var(--gap);
+  }
+
+  /* 仿 GitHub issue 评论框：头像在左，带小三角的气泡在右 */
+  .memo {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .memo-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: var(--shadow-1);
+  }
+
+  .memo-box {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .memo-box::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: -6px;
+    width: 10px;
+    height: 10px;
+    border-left: 1px solid var(--c-border);
+    border-bottom: 1px solid var(--c-border);
+    background: var(--c-panel-solid);
+    transform: rotate(45deg);
+  }
+
+  .memo-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--c-border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--c-soft);
+    font-size: 14px;
+  }
+
+  .memo-head time {
+    color: var(--c-text-2);
+  }
+
+  .memo-body {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  /* 翻页栏单独一张卡片，往右让出头像那一列（40 + 12），和气泡左边对齐 */
+  .memos-pager {
+    margin-left: 52px;
+  }
+
+  .memos-pager .pager {
+    padding: 14px 18px;
+    border-top: 0;
+  }
+</style>

@@ -1,0 +1,234 @@
+---
+import { countdown } from '../../config';
+import Icon from '../Icon.astro';
+
+const rows = ['今日', '本周', '本月', '本年'];
+---
+
+<section class="widget cd" data-events={JSON.stringify(countdown)} transition:persist="countdown">
+  <div class="widget-title"><Icon name="calendar-event" /> 倒计时</div>
+  <div class="cd-body">
+    <div class="cd-left">
+      <span class="cd-text">距离</span>
+      <span class="cd-name" data-cd-name>—</span>
+      <span class="cd-days"><b data-cd-days>-</b>天</span>
+      <span class="cd-date" data-cd-date></span>
+    </div>
+    <div class="cd-right">
+      {
+        rows.map((label) => (
+          <div class="cd-row">
+            <span class="cd-label">{label}</span>
+            <div class="cd-track">
+              <div class="cd-bar" />
+              <span class="cd-pct" />
+              <span class="cd-left-text" />
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  .cd-body {
+    display: flex;
+    gap: 14px;
+  }
+
+  .cd-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    line-height: 1.4;
+  }
+
+  .cd-left::after {
+    content: '';
+    position: absolute;
+    right: -8px;
+    width: 2px;
+    height: 80%;
+    border-radius: 2px;
+    background: var(--c-accent);
+    opacity: 0.4;
+  }
+
+  .cd-text {
+    font-size: 12px;
+    color: var(--c-text-2);
+  }
+
+  .cd-name {
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .cd-days {
+    font-size: 12px;
+    color: var(--c-text-2);
+  }
+
+  .cd-days b {
+    margin-right: 2px;
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--c-accent);
+  }
+
+  .cd-date {
+    font-size: 11px;
+    opacity: 0.6;
+  }
+
+  .cd-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .cd-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 22px;
+    font-size: 12.5px;
+  }
+
+  .cd-label {
+    white-space: nowrap;
+    color: var(--c-text-2);
+  }
+
+  .cd-track {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-radius: 7px;
+    background: var(--c-soft-2);
+    overflow: hidden;
+  }
+
+  .cd-bar {
+    height: 100%;
+    width: 0;
+    border-radius: 7px;
+    background: var(--c-accent);
+  }
+
+  .cd-pct,
+  .cd-left-text {
+    position: absolute;
+    left: 8px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .cd-track .many {
+    color: var(--c-panel-solid);
+    font-weight: 600;
+  }
+
+  .cd-left-text {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+
+  .cd-body:hover .cd-left-text {
+    opacity: 1;
+    transform: none;
+  }
+
+  .cd-body:hover .cd-pct {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+</style>
+
+<script>
+  const DAY = 86400000;
+  let timer: ReturnType<typeof setInterval> | undefined;
+
+  type Ev = { name: string; date: string };
+
+  function nextEvent(events: Ev[], today: Date) {
+    let best: { name: string; date: Date } | undefined;
+    for (const ev of events) {
+      const [a, b, c] = ev.date.split('-').map(Number);
+      let date: Date;
+      if (c === undefined) {
+        // MM-DD 每年重复，今年过了就算明年的
+        date = new Date(today.getFullYear(), a - 1, b);
+        if (date < today) date = new Date(today.getFullYear() + 1, a - 1, b);
+      } else {
+        date = new Date(a, b - 1, c);
+        if (date < today) continue;
+      }
+      if (!best || date < best.date) best = { name: ev.name, date };
+    }
+    return best;
+  }
+
+  function progress(now: Date) {
+    const y = now.getFullYear();
+    const frac = (now.getHours() + now.getMinutes() / 60) / 24;
+    const weekday = (now.getDay() + 6) % 7;
+    const monthDays = new Date(y, now.getMonth() + 1, 0).getDate();
+    const yearDays = Math.round((new Date(y + 1, 0, 1).getTime() - new Date(y, 0, 1).getTime()) / DAY);
+    const dayOfYear = Math.round((new Date(y, now.getMonth(), now.getDate()).getTime() - new Date(y, 0, 1).getTime()) / DAY);
+    return [
+      { pct: frac, left: `${24 - now.getHours()} 小时` },
+      { pct: (weekday + frac) / 7, left: `${7 - weekday} 天` },
+      { pct: (now.getDate() - 1 + frac) / monthDays, left: `${monthDays - now.getDate() + 1} 天` },
+      { pct: (dayOfYear + frac) / yearDays, left: `${yearDays - dayOfYear} 天` },
+    ];
+  }
+
+  function update(card: HTMLElement) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const ev = nextEvent(JSON.parse(card.dataset.events || '[]'), today);
+    const set = (sel: string, text: string) => {
+      const el = card.querySelector(sel);
+      if (el) el.textContent = text;
+    };
+    if (ev) {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      set('[data-cd-name]', ev.name);
+      set('[data-cd-days]', String(Math.round((ev.date.getTime() - today.getTime()) / DAY)));
+      set('[data-cd-date]', `${ev.date.getFullYear()}-${pad(ev.date.getMonth() + 1)}-${pad(ev.date.getDate())}`);
+    }
+    const rows = card.querySelectorAll('.cd-row');
+    progress(now).forEach(({ pct, left }, i) => {
+      const row = rows[i];
+      if (!row) return;
+      const percent = pct * 100;
+      const bar = row.querySelector<HTMLElement>('.cd-bar')!;
+      bar.style.width = `${percent}%`;
+      bar.style.opacity = String(0.55 + pct * 0.45);
+      const pctEl = row.querySelector('.cd-pct')!;
+      pctEl.textContent = `${percent.toFixed(1)}%`;
+      pctEl.classList.toggle('many', percent >= 40);
+      const leftEl = row.querySelector('.cd-left-text')!;
+      leftEl.textContent = `还剩 ${left}`;
+      leftEl.classList.toggle('many', percent >= 55);
+    });
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    clearInterval(timer);
+    const card = document.querySelector<HTMLElement>('.cd');
+    if (!card) return;
+    update(card);
+    timer = setInterval(() => update(card), 60000);
+  });
+</script>

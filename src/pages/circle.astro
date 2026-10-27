@@ -1,0 +1,424 @@
+---
+import Icon from '../components/Icon.astro';
+import { background, circleApi } from '../config';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="朋友圈" description="订阅朋友们的最新文章">
+  <section class="card fc-banner">
+    <img class="fc-banner-img" src={background.api} alt="" decoding="async" />
+    <div class="fc-banner-top">
+      <span class="fc-tag">朋友圈</span>
+      <h1 class="fc-title">最新文章订阅</h1>
+    </div>
+    <p class="fc-sub" data-fc-sub>用 RSS 订阅朋友们的最新文章</p>
+    <a class="fc-about" href="/about/"><Icon name="user-circle" /> 关于本人</a>
+  </section>
+
+  <div class="fc" data-api={circleApi}>
+    <p class="card fc-status" data-fc-status>正在拉取朋友们的最新文章…</p>
+    <div class="fc-body" hidden>
+      <div class="fc-head">
+        <span><Icon name="fish-hook" /> 钓鱼</span>
+        <button class="icon-btn fc-reroll" type="button" aria-label="换一篇" title="换一篇">
+          <Icon name="refresh" />
+        </button>
+        <a class="fc-more" href="/friends/">全部友链 ›</a>
+      </div>
+      <p class="card fc-fish">
+        三十年河东，三十年河西，莫欺我没有看过来自友链 <span class="fc-who" data-fish-who></span> 的文章：<a
+          data-fish-link
+          target="_blank"
+          rel="noopener"></a>
+      </p>
+      <div class="fc-head"><span><Icon name="fish" /> 鱼塘</span></div>
+      <div class="fc-grid" data-fc-grid></div>
+      <button class="btn fc-load" type="button" hidden>再来亿点</button>
+    </div>
+  </div>
+  <template id="tpl-fc-calendar"><Icon name="calendar" /></template>
+</BaseLayout>
+
+<style is:global>
+  .fc-banner {
+    position: relative;
+    height: 240px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 22px 28px 20px;
+    color: #fff;
+  }
+
+  .fc-banner-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .fc-banner:hover .fc-banner-img {
+    transform: scale(1.04);
+  }
+
+  .fc-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgb(0 0 0 / 0.2), transparent 40%, rgb(0 0 0 / 0.5));
+  }
+
+  .fc-banner > :not(img) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .fc-tag {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  .fc-title {
+    font-family: var(--font-title);
+    font-size: 2rem;
+    font-weight: 400;
+    text-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+  }
+
+  .fc-sub {
+    max-width: 70%;
+    font-size: 13px;
+    opacity: 0.92;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.4);
+  }
+
+  .fc-about {
+    position: absolute !important;
+    right: 20px;
+    bottom: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.2);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+
+  .fc-about:hover {
+    background: rgb(255 255 255 / 0.35);
+  }
+
+  .fc-status {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--c-text-3);
+  }
+
+  .fc-body:not([hidden]) {
+    display: grid;
+    gap: 12px;
+  }
+
+  .fc-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 2px -4px;
+    font-weight: 700;
+  }
+
+  .fc-head > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fc-reroll {
+    width: 28px;
+    height: 28px;
+  }
+
+  .fc-reroll:active .icon {
+    transform: rotate(180deg);
+    transition: transform 0.3s;
+  }
+
+  .fc-more {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-text-2);
+    transition: color 0.2s;
+  }
+
+  .fc-more:hover {
+    color: var(--c-accent);
+  }
+
+  .fc-fish {
+    padding: 12px 18px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--c-text-2);
+  }
+
+  .fc-fish a {
+    color: var(--c-text);
+    font-weight: 600;
+    border-bottom: 1px solid var(--c-border);
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .fc-fish a:hover {
+    color: var(--c-accent);
+    border-color: var(--c-accent);
+  }
+
+  .fc-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    vertical-align: bottom;
+    font-weight: 600;
+    color: var(--c-accent);
+  }
+
+  .fc-who img {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+  }
+
+  .fc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+  }
+
+  /* 卡片右下角垫一张淡淡的作者头像 */
+  .fc-card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 108px;
+    padding: 12px 14px;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: var(--c-panel);
+    box-shadow: var(--shadow-1);
+    transition:
+      transform 0.25s,
+      border-color 0.25s;
+    animation: fc-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 25ms);
+  }
+
+  @keyframes fc-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  .fc-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--c-accent);
+  }
+
+  .fc-card-bg {
+    position: absolute;
+    right: -22px;
+    bottom: -22px;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    opacity: 0.28;
+    pointer-events: none;
+    transition:
+      transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.3s;
+  }
+
+  .fc-card:hover .fc-card-bg {
+    transform: scale(1.1) rotate(-8deg);
+    opacity: 0.45;
+  }
+
+  .fc-card-title {
+    position: relative;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .fc-card-meta {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .fc-author {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 60%;
+    padding: 2px 8px 2px 3px;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 999px;
+    background: var(--c-panel);
+    color: var(--c-text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fc-author img {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+  }
+
+  .fc-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--c-text-3);
+    white-space: nowrap;
+  }
+
+  .fc-load {
+    display: block;
+    margin: 4px auto 0;
+    padding: 0 28px;
+    border-radius: 999px;
+  }
+
+  .fc-load[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .fc-banner {
+      height: 200px;
+      padding: 18px 18px 16px;
+    }
+
+    .fc-title {
+      font-size: 1.6rem;
+    }
+
+    .fc-sub {
+      max-width: 55%;
+    }
+  }
+</style>
+
+<script>
+  type Post = { title: string; link: string; date: string; author: string; avatar?: string };
+  type Data = { updated: string; feeds: number; posts: Post[] };
+
+  // 每次多显示几张卡片
+  const STEP = 20;
+
+  const esc = (s = '') =>
+    s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const avatar = (src?: string, cls = '') =>
+    src ? `<img class="${cls}" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+
+  async function load(api: string): Promise<Data> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(api, { signal: ctrl.signal });
+      if (!res.ok) throw new Error(String(res.status));
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function init() {
+    const root = document.querySelector<HTMLElement>('.fc');
+    if (!root) return;
+    const status = root.querySelector<HTMLElement>('[data-fc-status]')!;
+
+    let data: Data;
+    try {
+      data = await load(root.dataset.api!);
+    } catch {
+      status.textContent = '朋友圈服务暂时连不上，稍后再来看看吧～';
+      return;
+    }
+    const posts = data.posts ?? [];
+    if (!posts.length) {
+      status.textContent = '朋友圈还空着，等订阅了朋友们的博客就会热闹起来～';
+      return;
+    }
+
+    status.remove();
+    const updated = data.updated.slice(0, 16).replace('T', ' ');
+    document.querySelector('[data-fc-sub]')!.textContent = `订阅了 ${data.feeds} 位朋友，共 ${posts.length} 篇，更新于 ${updated}`;
+    root.querySelector<HTMLElement>('.fc-body')!.hidden = false;
+
+    // 钓鱼：随机抽一篇，点刷新再抽
+    const fish = root.querySelector<HTMLElement>('.fc-fish')!;
+    const reroll = () => {
+      const p = posts[Math.floor(Math.random() * posts.length)];
+      fish.querySelector('[data-fish-who]')!.innerHTML = `${avatar(p.avatar)}${esc(p.author)}`;
+      const link = fish.querySelector<HTMLAnchorElement>('[data-fish-link]')!;
+      link.href = p.link;
+      link.textContent = p.title;
+      fish.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'ease-out' });
+    };
+    reroll();
+    root.querySelector('.fc-reroll')!.addEventListener('click', reroll);
+
+    // 鱼塘：先放一批，点「再来亿点」继续往下加
+    const grid = root.querySelector<HTMLElement>('[data-fc-grid]')!;
+    const more = root.querySelector<HTMLButtonElement>('.fc-load')!;
+    const calendar = document.querySelector<HTMLTemplateElement>('#tpl-fc-calendar')?.innerHTML ?? '';
+    let shown = 0;
+    const showMore = () => {
+      const html = posts
+        .slice(shown, shown + STEP)
+        .map(
+          (p, i) => `<a class="fc-card" style="--i:${i}" href="${esc(p.link)}" target="_blank" rel="noopener">
+            ${avatar(p.avatar, 'fc-card-bg')}
+            <span class="fc-card-title">${esc(p.title)}</span>
+            <span class="fc-card-meta">
+              <span class="fc-author">${avatar(p.avatar)}${esc(p.author)}</span>
+              ${p.date ? `<span class="fc-date">${calendar}${esc(p.date)}</span>` : ''}
+            </span>
+          </a>`,
+        )
+        .join('');
+      grid.insertAdjacentHTML('beforeend', html);
+      shown += STEP;
+      more.hidden = shown >= posts.length;
+    };
+    showMore();
+    more.addEventListener('click', showMore);
+  }
+
+  document.addEventListener('astro:page-load', init);
+</script>

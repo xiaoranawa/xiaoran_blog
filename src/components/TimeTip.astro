@@ -1,0 +1,134 @@
+---
+import { timeTip } from '../config';
+---
+
+<div
+  class="time-tip"
+  id="time-tip"
+  transition:persist
+  role="status"
+  aria-live="polite"
+  title="点一下收起"
+  data-tips={JSON.stringify(timeTip.tips)}
+  data-delay={timeTip.delay}
+  data-duration={timeTip.duration}
+>
+  <span class="time-tip-clock" data-time-tip-clock></span>
+  <span class="time-tip-text" data-time-tip-text></span>
+</div>
+
+<style is:global>
+  /* 平时藏在屏幕右边外面，弹出来时带一点回弹 */
+  .time-tip {
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    /* 比 Cookie 提示和手机菜单低一层 */
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100vw - 32px);
+    padding: 6px 16px 6px 6px;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: var(--c-panel-solid);
+    box-shadow: var(--shadow-2);
+    font-size: 13.5px;
+    color: var(--c-text);
+    cursor: pointer;
+    visibility: hidden;
+    transform: translateX(calc(100% + 32px));
+    transition:
+      transform 0.4s cubic-bezier(0.55, 0, 0.75, 0),
+      visibility 0s 0.4s;
+  }
+
+  .time-tip.show {
+    visibility: visible;
+    transform: none;
+    transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .time-tip-clock {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--c-accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-tip-text {
+    line-height: 1.5;
+  }
+
+  /* 窄屏右下角有回到顶部和目录按钮，往左让一让 */
+  @media (max-width: 1199px) {
+    .time-tip {
+      right: 64px;
+      max-width: calc(100vw - 80px);
+    }
+  }
+
+  @media (max-width: 959px) {
+    .time-tip {
+      right: 58px;
+      bottom: 16px;
+      max-width: calc(100vw - 70px);
+      border-radius: 18px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .time-tip {
+      opacity: 0;
+      transform: none;
+      transition:
+        opacity 0.2s,
+        visibility 0s 0.2s;
+    }
+
+    .time-tip.show {
+      opacity: 1;
+      transition: opacity 0.2s;
+    }
+  }
+</style>
+
+<script>
+  type Tip = { from: number; to: number; texts: string[] };
+
+  const box = document.getElementById('time-tip')!;
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  // 右上角的欢迎框还在，或者手机上 Cookie 提示还挡在底部，就等它们收起来
+  function blocked() {
+    const welcome = document.getElementById('welcome');
+    const cookie = document.getElementById('cookie');
+    return (welcome && !welcome.hidden) || (cookie && !cookie.hidden && matchMedia('(max-width: 959px)').matches);
+  }
+
+  function show() {
+    if (blocked()) {
+      setTimeout(show, 500);
+      return;
+    }
+    const now = new Date();
+    const hour = now.getHours();
+    const tips: Tip[] = JSON.parse(box.dataset.tips || '[]');
+    const texts = tips.find((t) => hour >= t.from && hour < t.to)?.texts ?? [];
+    if (!texts.length) return;
+    box.querySelector('[data-time-tip-clock]')!.textContent = `${pad(hour)}:${pad(now.getMinutes())}`;
+    box.querySelector('[data-time-tip-text]')!.textContent = texts[Math.floor(Math.random() * texts.length)];
+    box.classList.add('show');
+    setTimeout(() => box.classList.remove('show'), Number(box.dataset.duration));
+  }
+
+  box.addEventListener('click', () => box.classList.remove('show'));
+
+  // 打开或刷新页面时弹一次，站内点链接换页不会再弹
+  setTimeout(show, Number(box.dataset.delay));
+</script>

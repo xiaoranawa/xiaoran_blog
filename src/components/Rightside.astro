@@ -1,0 +1,148 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  hasToc?: boolean;
+}
+
+const { hasToc = false } = Astro.props;
+---
+
+<div class="rightside">
+  {
+    hasToc && (
+      <button class="rs-btn rs-toc" type="button" data-toc-toggle aria-label="目录" title="目录">
+        <Icon name="list-details" size={18} />
+      </button>
+    )
+  }
+  <button class="rs-btn rs-top" type="button" data-back-top aria-label="回到顶部" title="回到顶部">
+    <Icon name="arrow-up" size={18} />
+  </button>
+</div>
+
+<button class="gotop" type="button" data-back-top aria-label="回到顶部" title="回到顶部"></button>
+
+<style is:global>
+  .rightside {
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rs-btn {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: var(--c-panel);
+    color: var(--c-text-2);
+    box-shadow: var(--shadow-1);
+    transition: color 0.2s, background-color 0.2s, opacity 0.25s, transform 0.25s;
+  }
+
+  .rs-btn:hover {
+    color: var(--c-text);
+    background: var(--c-widget);
+  }
+
+  .rs-top {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+  }
+
+  .rightside.scrolled .rs-top {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .rs-toc {
+    display: none;
+  }
+
+  @media (max-width: 1199px) {
+    .rs-toc {
+      display: grid;
+    }
+  }
+
+  @media (max-width: 959px) {
+    .rightside {
+      right: 12px;
+      bottom: 16px;
+    }
+  }
+
+  /* 猫耳FM 那种绳子吊着小猫的回到顶部，做法来自 MisakaTAT/GoTop */
+  .gotop {
+    display: none;
+    position: fixed;
+    top: -900px;
+    /* 屏幕够宽就挂在右侧留白正中，不够就贴着右边挂在卡片前面 */
+    right: max(8px, calc((100vw - 1560px) / 4 - 35px));
+    z-index: 40;
+    width: 70px;
+    height: 900px;
+    background: url(/img/gotop.png) no-repeat;
+    transition: top 0.5s ease-in-out;
+    animation: gotop-float 2s linear infinite;
+  }
+
+  .gotop.show {
+    top: -200px;
+  }
+
+  @keyframes gotop-float {
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  /* 三栏的宽屏用小猫，窄屏和手机还用小按钮 */
+  @media (min-width: 1200px) {
+    .gotop {
+      display: block;
+    }
+
+    .rs-top {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.documentElement;
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as Element;
+    if (target.closest('[data-toc-toggle]')) {
+      root.classList.toggle('toc-open');
+    } else if (target.closest('[data-back-top]')) {
+      scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (!target.closest('#toc')) {
+      // 点到目录外面就收起
+      root.classList.remove('toc-open');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') root.classList.remove('toc-open');
+  });
+
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    document.querySelector('.rightside')?.classList.toggle('scrolled', scrollY > 200);
+    document.querySelector('.gotop')?.classList.toggle('show', scrollY > 200);
+  };
+  addEventListener('scroll', () => (frame ||= requestAnimationFrame(update)), { passive: true });
+  document.addEventListener('astro:page-load', update);
+</script>

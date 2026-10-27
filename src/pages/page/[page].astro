@@ -1,0 +1,14 @@
+---
+import HomeView from '../../components/HomeView.astro';
+import { site } from '../../config';
+import { getPosts } from '../../utils/posts';
+
+export async function getStaticPaths() {
+  const total = Math.ceil((await getPosts()).length / site.postsPerPage);
+  return Array.from({ length: Math.max(0, total - 1) }, (_, i) => ({ params: { page: String(i + 2) } }));
+}
+
+const page = Number(Astro.params.page);
+---
+
+<HomeView page={page} />

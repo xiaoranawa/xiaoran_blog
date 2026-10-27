@@ -1,0 +1,14 @@
+---
+import MemosView from '../../../components/MemosView.astro';
+import { site } from '../../../config';
+import { getMemos } from '../../../utils/memos';
+
+export async function getStaticPaths() {
+  const total = Math.ceil((await getMemos()).length / site.memosPerPage);
+  return Array.from({ length: Math.max(0, total - 1) }, (_, i) => ({ params: { page: String(i + 2) } }));
+}
+
+const page = Number(Astro.params.page);
+---
+
+<MemosView page={page} />

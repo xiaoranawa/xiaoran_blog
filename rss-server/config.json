@@ -1,0 +1,7 @@
+{
+  "listen": "127.0.0.1:8787",
+  "interval": "30m",
+  "per_feed": 8,
+  "allow_origins": ["https://blog.xiaoowo.top", "http://localhost:4321"],
+  "feeds": []
+}

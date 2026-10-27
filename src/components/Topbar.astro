@@ -1,0 +1,72 @@
+---
+import { site } from '../config';
+import Icon from './Icon.astro';
+---
+
+<header class="topbar">
+  <button class="icon-btn" type="button" data-drawer-toggle aria-label="打开菜单">
+    <Icon name="menu-2" size={20} />
+  </button>
+  <a class="topbar-brand" href="/">
+    <img src={site.avatar} alt="" width="28" height="28" />
+    <span>{site.title}</span>
+  </a>
+  <button class="icon-btn" type="button" data-search-open aria-label="搜索">
+    <Icon name="search" size={19} />
+  </button>
+  <button class="icon-btn theme-cycle" type="button" data-theme-cycle aria-label="切换主题">
+    <Icon name="sun" size={19} class="t-light" />
+    <Icon name="device-desktop" size={19} class="t-system" />
+    <Icon name="moon" size={19} class="t-dark" />
+  </button>
+</header>
+
+<style is:global>
+  .topbar {
+    display: none;
+  }
+
+  @media (max-width: 959px) {
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--c-border);
+      background: var(--c-panel);
+    }
+  }
+
+  .topbar-brand {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-title);
+    font-size: 1.1em;
+  }
+
+  .topbar-brand img {
+    border-radius: 50%;
+  }
+
+  .topbar-brand span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .theme-cycle .icon {
+    display: none;
+  }
+
+  :root[data-theme-pref='light'] .theme-cycle .t-light,
+  :root[data-theme-pref='system'] .theme-cycle .t-system,
+  :root[data-theme-pref='dark'] .theme-cycle .t-dark {
+    display: block;
+  }
+</style>

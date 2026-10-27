@@ -1,0 +1,197 @@
+---
+import { footer, footerLinks, site } from '../config';
+import Icon from './Icon.astro';
+import MoeIcon from './MoeIcon.astro';
+
+const start = Number(site.since.slice(0, 4));
+const now = new Date().getFullYear();
+const years = start < now ? `${start} - ${now}` : String(now);
+const external = (href: string) => (href.startsWith('http') ? '_blank' : undefined);
+---
+
+<footer class="site-footer">
+  <div class="footer-social">
+    {
+      footerLinks.left.map((link) => (
+        <a class="fs-btn" href={link.href} title={link.name} aria-label={link.name} target={external(link.href)} rel="noopener">
+          <Icon name={link.icon} size={18} />
+        </a>
+      ))
+    }
+    <a class="fs-avatar" href="/" title={site.title}>
+      <img src={site.avatar} alt={site.author} width="56" height="56" loading="lazy" />
+    </a>
+    {
+      footerLinks.right.map((link) => (
+        <a class="fs-btn" href={link.href} title={link.name} aria-label={link.name} target={external(link.href)} rel="noopener">
+          <Icon name={link.icon} size={18} />
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="footer-pet" style={`--ground: url(${footer.pet.ground})`} aria-hidden="true">
+    <img src={footer.pet.image} alt="" width="974" height="118" loading="lazy" />
+  </div>
+
+  <div class="footer-bar">
+    <div class="footer-bar-inner">
+      <div class="fb-copy">©{years} By <a href="/about/">{site.author}</a></div>
+      <div class="fb-right">
+        <a class="fb-icp" href={footer.icp.href} target="_blank" rel="noopener">
+          <MoeIcon size="1.15em" />
+          {footer.icp.text}
+        </a>
+        <a class="fb-cc" href={footer.license.href} target="_blank" rel="license noopener" title={footer.license.name}>
+          <Icon name="creative-commons" />
+          <Icon name="creative-commons-by" />
+          <Icon name="creative-commons-nc" />
+          <Icon name="creative-commons-nd" />
+          <span class="sr-only">{footer.license.name}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style is:global>
+  .site-footer {
+    margin-top: 24px;
+  }
+
+  .footer-social {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(14px, 6vw, 56px);
+    padding: 12px 16px 28px;
+  }
+
+  .fs-btn {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--c-panel-solid);
+    color: var(--c-text);
+    box-shadow: var(--shadow-1);
+    transition: background-color 0.25s, color 0.25s, transform 0.25s;
+  }
+
+  .fs-btn:hover {
+    background: var(--c-text);
+    color: var(--c-panel-solid);
+    transform: translateY(-3px);
+  }
+
+  .fs-avatar img {
+    display: block;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid var(--c-panel-solid);
+    box-shadow: var(--shadow-2);
+    transition: transform 0.6s ease;
+  }
+
+  .fs-avatar:hover img {
+    transform: rotate(360deg);
+  }
+
+  /* 页脚宠物挂件，做法来自 blog.bsgun.cn/posts/55b29cdb */
+  .footer-pet {
+    position: relative;
+  }
+
+  .footer-pet::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 36px;
+    background: var(--ground) repeat-x center / auto 100%;
+    box-shadow: 0 4px 7px rgb(0 0 0 / 0.15);
+  }
+
+  .footer-pet img {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: min(974px, 100vw);
+    height: auto;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 1023px) {
+    .footer-pet::before {
+      height: 3.7vw;
+    }
+  }
+
+  :root[data-theme='dark'] .footer-pet {
+    filter: brightness(0.8);
+  }
+
+  .footer-bar {
+    background: var(--c-panel-solid);
+    border-top: 1px solid var(--c-border-soft);
+    font-size: 14px;
+    color: var(--c-text-2);
+  }
+
+  .footer-bar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 24px;
+  }
+
+  .fb-copy a,
+  .fb-icp {
+    font-weight: 600;
+    color: var(--c-text);
+    transition: color 0.2s;
+  }
+
+  .fb-copy a:hover,
+  .fb-icp:hover {
+    color: var(--c-accent);
+  }
+
+  .fb-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .fb-icp {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .fb-cc {
+    display: inline-flex;
+    gap: 6px;
+    font-size: 17px;
+    color: var(--c-text);
+    transition: color 0.2s;
+  }
+
+  .fb-cc:hover {
+    color: var(--c-accent);
+  }
+
+  @media (max-width: 600px) {
+    .footer-bar-inner {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>

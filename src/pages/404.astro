@@ -1,0 +1,40 @@
+---
+import Icon from '../components/Icon.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="页面不见了">
+  <section class="card nf">
+    <p class="nf-code">404</p>
+    <p class="nf-text">这个房间里没有你要找的东西，可能被搬走了～</p>
+    <div class="nf-actions">
+      <a class="btn" href="/"><Icon name="home" /> 回首页</a>
+      <button class="btn" type="button" data-search-open><Icon name="search" /> 搜一搜</button>
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .nf {
+    padding: 64px 24px;
+    text-align: center;
+  }
+
+  .nf-code {
+    font-family: var(--font-title);
+    font-size: 5rem;
+    line-height: 1;
+    color: var(--c-text-3);
+  }
+
+  .nf-text {
+    margin: 16px 0 24px;
+    color: var(--c-text-2);
+  }
+
+  .nf-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+</style>

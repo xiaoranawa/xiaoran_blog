@@ -1,0 +1,23 @@
+---
+import { icons } from '@iconify-json/tabler';
+
+interface Props {
+  name: string;
+  size?: string | number;
+  class?: string;
+}
+
+const { name, size = '1em', class: className } = Astro.props;
+const icon = icons.icons[name] ?? icons.icons[icons.aliases?.[name]?.parent ?? ''];
+if (!icon) throw new Error(`找不到图标：${name}`);
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  class:list={['icon', className]}
+  aria-hidden="true"
+  set:html={icon.body}
+/>

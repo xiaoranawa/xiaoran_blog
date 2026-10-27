@@ -1,0 +1,109 @@
+---
+import { background } from '../config';
+---
+
+<div id="bg" transition:persist aria-hidden="true" data-api={background.api} style={`--bg-blur: ${background.blur}px`}>
+  <canvas id="bg-canvas"></canvas>
+</div>
+
+<style is:global>
+  #bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  #bg canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(var(--bg-blur));
+    /* 放大一点，盖住模糊后发虚的边缘 */
+    transform: scale(1.08);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  #bg canvas.loaded {
+    opacity: 1;
+  }
+
+  #bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--c-mask);
+  }
+</style>
+
+<script>
+  // 随机图偶尔有八千多像素宽，背景又是模糊的，缩到这个尺寸足够
+  const MAX_SIZE = 2560;
+  const root = document.documentElement;
+  let tint: { h: number; s: number } | undefined;
+
+  // 取主色调：越鲜艳的像素权重越大；颜色太杂、凑不出主色时饱和度会被压低
+  function measure(img: HTMLImageElement) {
+    const size = 32;
+    const ctx = Object.assign(document.createElement('canvas'), { width: size, height: size }).getContext('2d', {
+      willReadFrequently: true,
+    });
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0, size, size);
+    const { data } = ctx.getImageData(0, 0, size, size);
+    let x = 0, y = 0, sat = 0, weight = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const chroma = max - min;
+      if (!chroma) continue;
+      const s = chroma / (1 - Math.abs(max + min - 1));
+      const h = ((max === r ? ((g - b) / chroma + 6) % 6 : max === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4) * Math.PI) / 3;
+      x += Math.cos(h) * chroma;
+      y += Math.sin(h) * chroma;
+      sat += s * chroma;
+      weight += chroma;
+    }
+    if (!weight) return;
+    const coherence = Math.hypot(x, y) / weight;
+    return {
+      h: Math.round(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360),
+      s: Math.round((sat / weight) * coherence * 100),
+    };
+  }
+
+  function applyTint() {
+    if (!tint) return;
+    root.style.setProperty('--tint-h', String(tint.h));
+    root.style.setProperty('--tint-s', `${tint.s}%`);
+  }
+
+  // 图床允许跨域才能读像素取色；读不了就退回普通加载，只是不变色
+  function load(src: string, canvas: HTMLCanvasElement, cors = true) {
+    const img = new Image();
+    if (cors) img.crossOrigin = 'anonymous';
+    img.onerror = () => cors && load(src, canvas, false);
+    img.onload = async () => {
+      await img.decode().catch(() => {});
+      const scale = Math.min(1, MAX_SIZE / Math.max(img.naturalWidth, img.naturalHeight));
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.classList.add('loaded');
+      try {
+        tint = measure(img);
+        applyTint();
+      } catch {}
+    };
+    img.src = src;
+  }
+
+  // 背景在站内跳转时会保留，所以只在进站时加载一次；换页后 html 上的样式会被重置，要再补一次颜色
+  const bg = document.getElementById('bg');
+  const canvas = document.getElementById('bg-canvas') as HTMLCanvasElement | null;
+  if (bg?.dataset.api && canvas) load(bg.dataset.api, canvas);
+  document.addEventListener('astro:after-swap', applyTint);
+</script>

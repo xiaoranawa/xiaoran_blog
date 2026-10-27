@@ -1,0 +1,398 @@
+---
+import { formatNumber, ymd } from '../utils/date';
+import { getPosts } from '../utils/posts';
+import Icon from './Icon.astro';
+
+// 仿 GitHub 贡献图：一格一天，按当天发布的字数决定深浅
+const DAY = 86400000;
+const posts = await getPosts();
+const thisYear = new Date().getFullYear();
+
+const byDay = new Map<string, { count: number; words: number; titles: string[]; href: string }>();
+for (const post of posts) {
+  const key = ymd(post.data.date);
+  const day = byDay.get(key) ?? { count: 0, words: 0, titles: [], href: post.url };
+  day.count += 1;
+  day.words += post.words;
+  day.titles.push(post.data.title);
+  byDay.set(key, day);
+}
+
+const firstYear = Math.min(thisYear, ...posts.map((p) => p.data.date.getUTCFullYear()));
+const years = Array.from({ length: thisYear - firstYear + 1 }, (_, i) => thisYear - i);
+
+interface Day {
+  key: string;
+  count: number;
+  words: number;
+  titles: string[];
+  href?: string;
+  level: number;
+}
+
+function buildYear(year: number) {
+  const jan1 = Date.UTC(year, 0, 1);
+  const dec31 = Date.UTC(year, 11, 31);
+  // 每列从周一开始
+  const start = jan1 - ((new Date(jan1).getUTCDay() + 6) % 7) * DAY;
+  const weeks = Math.ceil(((dec31 - start) / DAY + 1) / 7);
+  const days = Array.from({ length: weeks * 7 }, (_, i): Day | null => {
+    const t = start + i * DAY;
+    if (t < jan1 || t > dec31) return null;
+    const key = ymd(new Date(t));
+    const info = byDay.get(key);
+    return { key, count: info?.count ?? 0, words: info?.words ?? 0, titles: info?.titles ?? [], href: info?.href, level: 0 };
+  });
+  const active = days.filter((d): d is Day => d !== null && d.count > 0);
+  const max = Math.max(1, ...active.map((d) => d.words));
+  for (const d of active) d.level = Math.max(1, Math.ceil((d.words / max) * 4));
+  // 月份标在这个月第一个完整周的上方，和 GitHub 一样
+  const months = Array.from({ length: 12 }, (_, m) => ({
+    label: `${m + 1}月`,
+    col: Math.ceil((Date.UTC(year, m, 1) - start) / (7 * DAY)),
+  }));
+  return {
+    year,
+    weeks,
+    months,
+    days,
+    count: active.reduce((sum, d) => sum + d.count, 0),
+    words: active.reduce((sum, d) => sum + d.words, 0),
+  };
+}
+
+const data = years.map(buildYear);
+const weekdays = ['一', '', '三', '', '五', '', ''];
+---
+
+<section class="card hm" data-heatmap>
+  <div class="hm-head">
+    <h2 class="hm-title">
+      <Icon name="chart-dots" />
+      {
+        data.map((d) => (
+          <span data-hm-panel={d.year} hidden={d.year !== thisYear}>
+            {d.year} 年写了 <b>{d.count}</b> 篇文章，共 <b>{formatNumber(d.words)}</b> 字
+          </span>
+        ))
+      }
+    </h2>
+    {
+      years.length > 1 && (
+        <div class="hm-years" role="tablist" aria-label="选择年份">
+          {years.map((y) => (
+            <button type="button" role="tab" data-hm-year={y} aria-selected={y === thisYear ? 'true' : 'false'}>
+              {y}
+            </button>
+          ))}
+        </div>
+      )
+    }
+  </div>
+
+  {
+    data.map((d) => (
+      <div class="hm-scroll" data-hm-panel={d.year} hidden={d.year !== thisYear}>
+        <div class="hm-graph" style={`--weeks:${d.weeks}`}>
+          <div class="hm-months" aria-hidden="true">
+            {d.months.map((m) => (
+              <span style={`--col:${m.col}`}>{m.label}</span>
+            ))}
+          </div>
+          <div class="hm-weekdays" aria-hidden="true">
+            {weekdays.map((w) => (
+              <span>{w}</span>
+            ))}
+          </div>
+          <div class="hm-grid">
+            {d.days.map((day) =>
+              day ? (
+                <i
+                  data-l={day.level}
+                  data-date={day.key}
+                  data-c={day.count || undefined}
+                  data-w={day.words || undefined}
+                  data-t={day.titles.join('\n') || undefined}
+                  data-href={day.href}
+                />
+              ) : (
+                <i class="hm-out" />
+              ),
+            )}
+          </div>
+        </div>
+      </div>
+    ))
+  }
+
+  <div class="hm-foot">
+    <span>格子越深，当天写的字越多</span>
+    <span class="hm-legend" aria-hidden="true">
+      少 <i data-l="0"></i><i data-l="1"></i><i data-l="2"></i><i data-l="3"></i><i data-l="4"></i> 多
+    </span>
+  </div>
+  <div class="hm-tip" hidden></div>
+</section>
+
+<style is:global>
+  .hm {
+    position: relative;
+    padding: 16px 18px 12px;
+  }
+
+  .hm-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 12px;
+  }
+
+  .hm-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  .hm-title .icon {
+    color: var(--c-text-2);
+  }
+
+  .hm-years {
+    display: flex;
+    gap: 4px;
+  }
+
+  .hm-years button {
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: var(--c-text-2);
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  .hm-years button:hover {
+    background: var(--c-soft);
+  }
+
+  .hm-years button[aria-selected='true'] {
+    background: var(--c-accent);
+    color: var(--c-panel-solid);
+  }
+
+  .hm-scroll {
+    container-type: inline-size;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+  }
+
+  .hm-scroll[hidden],
+  .hm-title [hidden] {
+    display: none;
+  }
+
+  .hm-graph {
+    /* 格子大小随卡片宽度伸缩，太窄时就横向滚动 */
+    --cell: clamp(10px, calc((100cqw - 30px) / var(--weeks) - 3px), 15px);
+    display: grid;
+    grid-template-columns: 24px auto;
+    grid-template-rows: 18px auto;
+    width: max-content;
+    font-size: 11px;
+    color: var(--c-text-2);
+  }
+
+  .hm-months {
+    grid-area: 1 / 2;
+    position: relative;
+  }
+
+  .hm-months span {
+    position: absolute;
+    left: calc(var(--col) * (var(--cell) + 3px));
+    white-space: nowrap;
+  }
+
+  .hm-weekdays {
+    grid-area: 2 / 1;
+    display: grid;
+    grid-template-rows: repeat(7, var(--cell));
+    gap: 3px;
+    line-height: var(--cell);
+    font-size: 10px;
+  }
+
+  .hm-grid {
+    grid-area: 2 / 2;
+    display: grid;
+    grid-template-rows: repeat(7, var(--cell));
+    grid-auto-flow: column;
+    grid-auto-columns: var(--cell);
+    gap: 3px;
+  }
+
+  .hm-grid i,
+  .hm-legend i {
+    display: block;
+    width: var(--cell, 11px);
+    height: var(--cell, 11px);
+    border-radius: 3px;
+    background: var(--hm-0);
+    outline: 1px solid rgb(31 35 40 / 0.06);
+    outline-offset: -1px;
+  }
+
+  :root[data-theme='dark'] :is(.hm-grid, .hm-legend) i {
+    outline-color: rgb(255 255 255 / 0.05);
+  }
+
+  .hm [data-l='1'] {
+    background: var(--hm-1);
+  }
+
+  .hm [data-l='2'] {
+    background: var(--hm-2);
+  }
+
+  .hm [data-l='3'] {
+    background: var(--hm-3);
+  }
+
+  .hm [data-l='4'] {
+    background: var(--hm-4);
+  }
+
+  .hm-grid i.hm-out {
+    visibility: hidden;
+  }
+
+  .hm-grid i[data-c]:not([data-c='0']) {
+    cursor: pointer;
+  }
+
+  .hm-grid i.today {
+    outline: 1.5px solid var(--c-accent);
+    outline-offset: 0;
+  }
+
+  .hm-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px 16px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--c-text-3);
+  }
+
+  .hm-legend {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .hm-legend i {
+    --cell: 11px;
+  }
+
+  .hm-tip {
+    position: absolute;
+    z-index: 5;
+    max-width: 260px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--c-tip-bg);
+    color: var(--c-tip-text);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-line;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+  }
+
+  .hm-tip::after {
+    content: '';
+    position: absolute;
+    left: var(--arrow, 50%);
+    bottom: -4px;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .hm-tip b {
+    font-weight: 600;
+  }
+</style>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  function tipText(cell: HTMLElement) {
+    const [y, m, d] = cell.dataset.date!.split('-').map(Number);
+    const head = `${y}年${m}月${d}日`;
+    const count = Number(cell.dataset.c || 0);
+    if (!count) return `${head} · 没写文章`;
+    return `${head} · ${count} 篇 · ${Number(cell.dataset.w).toLocaleString()} 字\n${cell.dataset.t}`;
+  }
+
+  function showTip(card: HTMLElement, cell: HTMLElement) {
+    const tip = card.querySelector<HTMLElement>('.hm-tip')!;
+    tip.textContent = tipText(cell);
+    tip.hidden = false;
+    const box = card.getBoundingClientRect();
+    const rect = cell.getBoundingClientRect();
+    const center = rect.left + rect.width / 2 - box.left;
+    const half = tip.offsetWidth / 2;
+    // 贴边时把气泡往里挪，小箭头仍然对准格子
+    const x = Math.min(Math.max(center, half + 4), box.width - half - 4);
+    tip.style.left = `${x}px`;
+    tip.style.top = `${rect.top - box.top - 8}px`;
+    tip.style.setProperty('--arrow', `${center - x + half}px`);
+  }
+
+  function select(card: HTMLElement, year: string) {
+    card.querySelectorAll<HTMLElement>('[data-hm-panel]').forEach((el) => (el.hidden = el.dataset.hmPanel !== year));
+    card.querySelectorAll('[data-hm-year]').forEach((b) => b.setAttribute('aria-selected', String(b.getAttribute('data-hm-year') === year)));
+    reveal(card);
+  }
+
+  // 手机上图表放不下时，滚到今天或年底
+  function reveal(card: HTMLElement) {
+    const scroller = card.querySelector<HTMLElement>('.hm-scroll:not([hidden])');
+    if (!scroller) return;
+    const today = scroller.querySelector<HTMLElement>('.today');
+    scroller.scrollLeft = today ? today.offsetLeft - scroller.clientWidth + 60 : scroller.scrollWidth;
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const card = document.querySelector<HTMLElement>('[data-heatmap]');
+    if (!card) return;
+    const now = new Date();
+    const key = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    card.querySelector(`[data-date="${key}"]`)?.classList.add('today');
+    reveal(card);
+
+    card.addEventListener('pointerover', (e) => {
+      const cell = (e.target as Element).closest<HTMLElement>('.hm-grid i[data-date]');
+      if (cell) showTip(card, cell);
+    });
+    card.addEventListener('pointerout', (e) => {
+      if ((e.target as Element).closest('.hm-grid i')) card.querySelector<HTMLElement>('.hm-tip')!.hidden = true;
+    });
+    card.addEventListener('click', (e) => {
+      const target = e.target as Element;
+      const year = target.closest<HTMLElement>('[data-hm-year]')?.dataset.hmYear;
+      if (year) return select(card, year);
+      const cell = target.closest<HTMLElement>('.hm-grid i[data-href]');
+      if (cell && Number(cell.dataset.c)) navigate(cell.dataset.href!);
+    });
+  });
+</script>

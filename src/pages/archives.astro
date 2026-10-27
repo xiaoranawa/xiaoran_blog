@@ -1,0 +1,172 @@
+---
+import Icon from '../components/Icon.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { MONTHS, ymd } from '../utils/date';
+import { getPosts, groupByMonth } from '../utils/posts';
+
+const posts = await getPosts();
+const years = new Map<number, ReturnType<typeof groupByMonth>>();
+for (const month of groupByMonth(posts)) {
+  years.set(month.year, [...(years.get(month.year) ?? []), month]);
+}
+---
+
+<BaseLayout title="归档" description="所有文章的时间线">
+  <section class="card page-head">
+    <h1 class="page-title"><Icon name="archive" /> 归档</h1>
+    <p class="page-desc">目前共 {posts.length} 篇文章，继续加油～</p>
+  </section>
+
+  <section class="card archive">
+    {
+      [...years].map(([year, months]) => (
+        <div class="ar-year">
+          <h2 class="ar-year-title">
+            {year} <span class="counter">{months.reduce((s, m) => s + m.posts.length, 0)}</span>
+          </h2>
+          {months.map((m) => (
+            <div class="ar-month" id={`m-${m.key}`}>
+              <h3 class="ar-month-title">
+                {MONTHS[m.month - 1]} <span>{year}</span>
+              </h3>
+              <div class="ar-item">
+                <span class="ar-dot">
+                  <Icon name="pencil" />
+                </span>
+                <div class="ar-body">
+                  <p class="ar-summary">发布了 {m.posts.length} 篇文章</p>
+                  <ul class="ar-list">
+                    {m.posts.map((p) => (
+                      <li>
+                        <a href={p.url}>{p.data.title}</a>
+                        <time datetime={p.data.date.toISOString()}>{ymd(p.data.date).slice(5)}</time>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))
+    }
+    {posts.length === 0 && <p class="empty">还没有文章</p>}
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .archive {
+    padding: 8px 24px 20px;
+  }
+
+  .ar-year-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0 4px;
+    font-family: var(--font-title);
+    font-size: 1.4rem;
+    font-weight: 400;
+  }
+
+  .ar-month {
+    scroll-margin-top: 80px;
+  }
+
+  /* 仿 GitHub 的 Contribution activity：月份标题后面拖一条横线 */
+  .ar-month-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 18px 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .ar-month-title span {
+    font-weight: 400;
+    color: var(--c-text-2);
+  }
+
+  .ar-month-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    margin-left: 8px;
+    background: var(--c-border-soft);
+  }
+
+  .ar-item {
+    position: relative;
+    display: flex;
+    gap: 14px;
+    padding: 8px 0 8px 2px;
+  }
+
+  .ar-item::before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--c-border-soft);
+  }
+
+  .ar-dot {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--c-panel-solid);
+    background: var(--c-soft-2);
+    color: var(--c-text-2);
+    font-size: 15px;
+  }
+
+  .ar-body {
+    flex: 1;
+    min-width: 0;
+    padding-top: 4px;
+  }
+
+  .ar-summary {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .ar-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+
+  .ar-list a {
+    flex: 1;
+    min-width: 0;
+    color: var(--c-accent);
+  }
+
+  .ar-list a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .ar-list time {
+    flex: none;
+    font-size: 12px;
+    color: var(--c-text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 640px) {
+    .archive {
+      padding: 4px 16px 16px;
+    }
+  }
+</style>

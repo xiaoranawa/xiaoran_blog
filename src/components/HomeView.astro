@@ -1,0 +1,48 @@
+---
+import { site } from '../config';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts } from '../utils/posts';
+import Heatmap from './Heatmap.astro';
+import Icon from './Icon.astro';
+import Pagination from './Pagination.astro';
+import PostItem from './PostItem.astro';
+
+interface Props {
+  page: number;
+}
+
+const { page } = Astro.props;
+const posts = await getPosts();
+const total = Math.max(1, Math.ceil(posts.length / site.postsPerPage));
+const list = posts.slice((page - 1) * site.postsPerPage, page * site.postsPerPage);
+---
+
+<BaseLayout title={page > 1 ? `文章 · 第 ${page} 页` : undefined}>
+  <section class="card post-list">
+    <div class="box-header">
+      <Icon name="files" /> 文章 <span class="counter">{posts.length}</span>
+    </div>
+    {list.length ? list.map((post) => <PostItem post={post} />) : <p class="empty">还没有文章，敬请期待～</p>}
+    <Pagination current={page} total={total} />
+  </section>
+  {page === 1 && <Heatmap />}
+</BaseLayout>
+
+<style is:global>
+  /* 文章少时列表往下撑满，翻页栏落在热力图正上方；热力图和左栏底边对齐 */
+  .post-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .post-list .pager {
+    margin-top: auto;
+  }
+
+  .post-list > .empty {
+    flex: 1;
+    display: grid;
+    place-items: center;
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+import { comments } from '../config';
+import Icon from './Icon.astro';
+
+const enabled = Boolean(comments.repo && comments.repoId && comments.categoryId);
+---
+
+{
+  enabled && (
+    <section class="card">
+      <div class="box-header">
+        <Icon name="message-circle" /> 评论
+      </div>
+      <div
+        class="giscus"
+        data-repo={comments.repo}
+        data-repo-id={comments.repoId}
+        data-category={comments.category}
+        data-category-id={comments.categoryId}
+      />
+    </section>
+  )
+}
+
+<style is:global>
+  .giscus {
+    padding: 16px 18px;
+    min-height: 120px;
+  }
+</style>
+
+<script>
+  const theme = () => (document.documentElement.dataset.theme === 'dark' ? 'noborder_dark' : 'noborder_light');
+
+  // giscus 的脚本会在容器里生成 iframe，换页后容器是新的，要重新插一次
+  document.addEventListener('astro:page-load', () => {
+    const box = document.querySelector<HTMLElement>('.giscus');
+    if (!box || box.querySelector('iframe, script')) return;
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    const attrs: Record<string, string | undefined> = {
+      'data-repo': box.dataset.repo,
+      'data-repo-id': box.dataset.repoId,
+      'data-category': box.dataset.category,
+      'data-category-id': box.dataset.categoryId,
+      'data-mapping': 'pathname',
+      'data-strict': '0',
+      'data-reactions-enabled': '1',
+      'data-emit-metadata': '0',
+      'data-input-position': 'top',
+      'data-theme': theme(),
+      'data-lang': 'zh-CN',
+      'data-loading': 'lazy',
+    };
+    for (const [key, value] of Object.entries(attrs)) if (value) script.setAttribute(key, value);
+    box.append(script);
+  });
+
+  // 切换深浅色时让评论框跟着变
+  new MutationObserver(() => {
+    const frame = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+    frame?.contentWindow?.postMessage({ giscus: { setConfig: { theme: theme() } } }, 'https://giscus.app');
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>

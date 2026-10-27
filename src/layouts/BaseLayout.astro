@@ -1,0 +1,105 @@
+---
+import type { MarkdownHeading } from 'astro';
+import { ClientRouter } from 'astro:transitions';
+import Background from '../components/Background.astro';
+import CookieNotice from '../components/CookieNotice.astro';
+import Footer from '../components/Footer.astro';
+import Icon from '../components/Icon.astro';
+import Rightside from '../components/Rightside.astro';
+import SearchModal from '../components/SearchModal.astro';
+import Sidebar from '../components/Sidebar.astro';
+import TimeTip from '../components/TimeTip.astro';
+import Topbar from '../components/Topbar.astro';
+import WelcomeToast from '../components/WelcomeToast.astro';
+import ArchiveStats from '../components/widgets/ArchiveStats.astro';
+import Countdown from '../components/widgets/Countdown.astro';
+import Toc from '../components/widgets/Toc.astro';
+import WelcomeCard from '../components/widgets/WelcomeCard.astro';
+import { site } from '../config';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  headings?: MarkdownHeading[];
+}
+
+const { title, description = site.description, image, headings = [] } = Astro.props;
+const fullTitle = title ? `${title} | ${site.title}` : site.title;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(image ?? '/img/avatar.jpg', Astro.site);
+const hasToc = headings.some((h) => h.depth >= 2 && h.depth <= 4);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={site.author} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" href="/favicon.png?v=3" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
+    <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.title} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <link rel="stylesheet" href="https://fonts.bytedance.com/dfd/api/v1/css?family=DOUYINSANSBOLD-GB&display=swap" />
+    <ClientRouter />
+    <!-- 在页面绘制前就定好主题，避免闪一下 -->
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        const media = matchMedia('(prefers-color-scheme: dark)');
+        window.applyTheme = () => {
+          let pref = 'system';
+          try {
+            pref = localStorage.getItem('theme') || 'system';
+          } catch {}
+          root.dataset.themePref = pref;
+          root.dataset.theme = pref === 'dark' || (pref === 'system' && media.matches) ? 'dark' : 'light';
+        };
+        window.applyTheme();
+        media.addEventListener('change', window.applyTheme);
+        document.addEventListener('astro:after-swap', window.applyTheme);
+      })();
+    </script>
+  </head>
+  <body>
+    <Background />
+    <Topbar />
+    <div class="layout">
+      <Sidebar />
+      <main class="main" id="main">
+        <slot />
+      </main>
+      <aside class="aside">
+        {hasToc && <Toc headings={headings} />}
+        <WelcomeCard />
+        <Countdown />
+        <ArchiveStats />
+        {site.sticker && <img class="aside-sticker" src={site.sticker} alt="" loading="lazy" decoding="async" />}
+      </aside>
+    </div>
+    <Footer />
+    <Rightside hasToc={hasToc} />
+    <SearchModal />
+    <WelcomeToast />
+    <TimeTip />
+    <CookieNotice />
+    <div class="drawer-mask" data-drawer-close></div>
+    <template id="tpl-copy"><Icon name="copy" /></template>
+    <template id="tpl-check"><Icon name="check" /></template>
+    <script>
+      import '../scripts/ui';
+    </script>
+  </body>
+</html>

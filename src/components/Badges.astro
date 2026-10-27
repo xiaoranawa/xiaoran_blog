@@ -1,0 +1,275 @@
+---
+import { badges } from '../config';
+
+interface Props {
+  class?: string;
+}
+
+const { travel, boringbay } = badges;
+const gif = (dark: boolean) => `https://travel.moe/images/logo/gif-kt/startup-${travel.color}${dark ? '-dark' : ''}.gif`;
+const domain = Astro.site?.hostname;
+---
+
+<div class:list={['badges', Astro.props.class]}>
+  <a
+    href={travel.href}
+    target="_blank"
+    rel="noopener"
+    data-travel
+    data-tip={travel.tip}
+    data-notice={travel.notice}
+    aria-label={travel.tip}
+  >
+    <img class="badge-light" src={gif(false)} alt="异次元之旅" height="36" loading="lazy" />
+    <img class="badge-dark" src={gif(true)} alt="异次元之旅" height="36" loading="lazy" />
+  </a>
+  {
+    boringbay && domain && (
+      <a href="https://boringbay.com" target="_blank" rel="noopener" data-tip={boringbay.tip} aria-label={`无聊湾：${boringbay.tip}`}>
+        <img src={`https://boringbay.com/api/badge-v2/${domain}`} alt="无聊湾徽章" height="36" loading="lazy" />
+      </a>
+    )
+  }
+</div>
+
+<style is:global>
+  :root {
+    /* 提示胶囊和跳转横幅的底色，想换成别的颜色改这里 */
+    --travel-color: #7b86cf;
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .badges a {
+    position: relative;
+    display: block;
+    border-radius: 6px;
+    transition: transform 0.2s;
+  }
+
+  .badges a:hover {
+    transform: translateY(-2px);
+  }
+
+  .badges img {
+    display: block;
+    width: auto;
+    height: 36px;
+    border-radius: 6px;
+  }
+
+  /* 动图分深浅两版，只显示当前主题那张；另一张是懒加载，不会白下 */
+  :root[data-theme='dark'] .badges .badge-light,
+  :root:not([data-theme='dark']) .badges .badge-dark {
+    display: none;
+  }
+
+  /* 鼠标移上去在右边冒出提示，侧栏在左边，往右放不会被屏幕边缘切掉 */
+  @media (hover: hover) {
+    .badges [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: 50%;
+      left: calc(100% + 10px);
+      z-index: 5;
+      padding: 7px 18px;
+      border-radius: 999px;
+      background: var(--travel-color);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: var(--shadow-2);
+      pointer-events: none;
+      will-change: transform, opacity, clip-path;
+      /* 收起：从右往左缩回动图里，比弹出快一点 */
+      opacity: 0;
+      clip-path: inset(0 100% 0 0 round 999px);
+      transform: translate(-10px, -50%) scale(0.9);
+      transform-origin: left center;
+      transition:
+        opacity 0.18s ease,
+        clip-path 0.22s cubic-bezier(0.4, 0, 1, 1),
+        transform 0.22s cubic-bezier(0.4, 0, 1, 1);
+    }
+
+    /* 弹出：像从动图右边长出来，带一点回弹 */
+    .badges [data-tip]:hover::after {
+      opacity: 1;
+      clip-path: inset(0 0 0 0 round 999px);
+      transform: translate(0, -50%) scale(1);
+      transition:
+        opacity 0.25s ease,
+        clip-path 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  }
+
+  /* 手机菜单太窄，往右放会被切掉，改成在动图上方往上长出来 */
+  @media (hover: hover) {
+    .drawer-badges [data-tip]::after {
+      top: auto;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      max-width: min(270px, 74vw);
+      white-space: normal;
+      text-align: center;
+      clip-path: inset(100% 0 0 0 round 999px);
+      transform: translate(-50%, 8px) scale(0.9);
+      transform-origin: center bottom;
+    }
+
+    .drawer-badges [data-tip]:hover::after {
+      clip-path: inset(0 0 0 0 round 999px);
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: reduce) {
+    .badges [data-tip]::after,
+    .badges [data-tip]:hover::after {
+      clip-path: none;
+      transform: translate(0, -50%);
+      transition: opacity 0.2s ease;
+    }
+
+    .drawer-badges [data-tip]::after,
+    .drawer-badges [data-tip]:hover::after {
+      transform: translate(-50%, 0);
+    }
+  }
+
+  .travel-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 95;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 20px;
+    min-height: 54px;
+    padding: 10px 16px;
+    overflow: hidden;
+    background: var(--travel-color);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: var(--shadow-2);
+    animation: travel-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 1, 1),
+      opacity 0.3s ease;
+  }
+
+  .travel-bar.leaving {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  @keyframes travel-in {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+
+  /* 从左往右变亮的那一截就是倒计时，走完就跳转 */
+  .travel-progress {
+    position: absolute;
+    inset: 0;
+    background: rgb(255 255 255 / 0.18);
+    transform-origin: left;
+    animation: travel-progress var(--travel-duration) linear forwards;
+  }
+
+  @keyframes travel-progress {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  .travel-bar > span,
+  .travel-bar > button {
+    position: relative;
+  }
+
+  .travel-bar button {
+    padding: 4px 10px;
+    border: 1.5px solid rgb(255 255 255 / 0.8);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+
+  .travel-bar button:hover {
+    background: rgb(255 255 255 / 0.15);
+  }
+</style>
+
+<script>
+  const DURATION = 3000;
+  let bar: HTMLElement | null = null;
+
+  // 取消时先滑回顶部再移除；要跳转时直接移除
+  function cancel(animate = true) {
+    const el = bar;
+    bar = null;
+    if (!el) return;
+    if (!animate) return el.remove();
+    el.classList.add('leaving');
+    setTimeout(() => el.remove(), 300);
+  }
+
+  function go(href: string) {
+    // 优先开新标签页，被浏览器拦了就在当前页打开
+    const win = window.open(href, '_blank');
+    if (win) win.opener = null;
+    else location.href = href;
+  }
+
+  function travel(href: string, notice: string) {
+    cancel(false);
+    bar = document.createElement('div');
+    bar.className = 'travel-bar';
+    bar.setAttribute('role', 'alert');
+    bar.style.setProperty('--travel-duration', `${DURATION}ms`);
+
+    const progress = document.createElement('div');
+    progress.className = 'travel-progress';
+    progress.addEventListener('animationend', () => {
+      cancel(false);
+      go(href);
+    });
+    const text = document.createElement('span');
+    text.textContent = notice;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = '取消';
+    button.addEventListener('click', () => cancel());
+
+    bar.append(progress, text, button);
+    document.body.append(bar);
+  }
+
+  document.addEventListener('click', (e) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('a[data-travel]');
+    if (!link) return;
+    e.preventDefault();
+    document.documentElement.classList.remove('drawer-open');
+    travel(link.href, link.dataset.notice ?? '');
+  });
+
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && cancel());
+  document.addEventListener('astro:before-swap', () => cancel(false));
+</script>

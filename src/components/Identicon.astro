@@ -1,0 +1,31 @@
+---
+import { identicon } from '../utils/identicon';
+
+interface Props {
+  seed: string;
+  class?: string;
+}
+
+const { seed, class: className } = Astro.props;
+const { hue, cells } = identicon(seed);
+---
+
+<svg class:list={['identicon', className]} viewBox="-2.5 -2.5 10 10" aria-hidden="true" style={`--hue:${hue}`}>
+  {cells.map(([x, y]) => <rect x={x} y={y} width="1.02" height="1.02" />)}
+</svg>
+
+<style>
+  .identicon {
+    display: block;
+    background: hsl(var(--hue) 40% 94%);
+  }
+  .identicon rect {
+    fill: hsl(var(--hue) 52% 58%);
+  }
+  :global([data-theme='dark']) .identicon {
+    background: hsl(var(--hue) 18% 14%);
+  }
+  :global([data-theme='dark']) .identicon rect {
+    fill: hsl(var(--hue) 45% 62%);
+  }
+</style>

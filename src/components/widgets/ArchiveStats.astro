@@ -1,0 +1,127 @@
+---
+import { archiveCardMonths, site } from '../../config';
+import { formatNumber, MONTHS, ymd } from '../../utils/date';
+import { getPosts, groupByMonth } from '../../utils/posts';
+import Icon from '../Icon.astro';
+
+// 归档和网站资讯合在一张卡片里：上面按月归档，下面是统计数字
+const posts = await getPosts();
+const months = groupByMonth(posts).slice(0, archiveCardMonths);
+const words = posts.reduce((sum, p) => sum + p.words, 0);
+const last = Math.max(0, ...posts.map((p) => (p.data.updated ?? p.data.date).valueOf()));
+---
+
+<section class="widget" transition:persist="archive-stats">
+  <div class="widget-title">
+    <Icon name="archive" /> 归档
+    <a class="more" href="/archives/">更多 ›</a>
+  </div>
+  {
+    months.length ? (
+      <div class="ac-grid">
+        {months.map((m) => (
+          <a class="ac-item" href={`/archives/#m-${m.key}`}>
+            <span class="ac-month">
+              {MONTHS[m.month - 1]} {m.year}
+            </span>
+            <span class="ac-count">{m.posts.length} 篇</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p class="ac-empty">还没有文章</p>
+    )
+  }
+  <ul class="ss-list">
+    <li><Icon name="article" /> 文章总数 <span>{posts.length}</span></li>
+    <li><Icon name="stopwatch" /> 建站天数 <span><b data-site-since={site.since}>-</b> 天</span></li>
+    <li><Icon name="typography" /> 全站字数 <span>{formatNumber(words)}</span></li>
+    <li><Icon name="hourglass" /> 最后更新 <span>{last ? ymd(new Date(last), '/') : '-'}</span></li>
+    <li><Icon name="users" /> 总访客数 <span id="busuanzi_value_site_uv">-</span></li>
+    <li><Icon name="eye" /> 总访问量 <span id="busuanzi_value_site_pv">-</span></li>
+  </ul>
+</section>
+
+<style is:global>
+  .ac-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .ac-item {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 10px;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 8px;
+    background: var(--c-panel);
+    transition:
+      border-color 0.2s,
+      transform 0.2s;
+  }
+
+  .ac-item:hover {
+    border-color: var(--c-accent);
+    transform: translateY(-1px);
+  }
+
+  .ac-month {
+    font-size: 12px;
+    color: var(--c-text-3);
+  }
+
+  .ac-count {
+    font-weight: 600;
+  }
+
+  .ac-empty {
+    font-size: 13px;
+    color: var(--c-text-3);
+  }
+
+  /* 统计数字和上面的归档之间用一条虚线隔开 */
+  .ss-list {
+    display: grid;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--c-border);
+    font-size: 13.5px;
+  }
+
+  .ss-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--c-text-2);
+  }
+
+  .ss-list span {
+    margin-left: auto;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ss-list b {
+    font-weight: inherit;
+  }
+</style>
+
+<script>
+  import { counterScript } from '../../config';
+
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-site-since]').forEach((el) => {
+      const start = new Date(`${el.dataset.siteSince}T00:00:00`);
+      el.textContent = String(Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000) + 1));
+    });
+    // 每次换页都重新加载统计脚本，访问量才会累加
+    document.getElementById('counter-script')?.remove();
+    const script = document.createElement('script');
+    script.id = 'counter-script';
+    script.src = counterScript;
+    script.async = true;
+    document.body.append(script);
+  });
+</script>

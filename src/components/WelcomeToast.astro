@@ -1,0 +1,192 @@
+---
+import { welcome } from '../config';
+import { friendGroups } from '../data/friends';
+
+const sites: Record<string, string> = { ...welcome.sites };
+for (const friend of friendGroups.flatMap((g) => g.items)) {
+  sites[new URL(friend.url).hostname.replace(/^www\./, '')] = friend.name;
+}
+---
+
+<div
+  id="welcome"
+  class="welcome"
+  hidden
+  role="status"
+  aria-live="polite"
+  data-greetings={JSON.stringify(welcome.greetings)}
+  data-sites={JSON.stringify(sites)}
+  style={`--welcome-duration: ${welcome.duration}ms`}
+>
+  <button class="welcome-close" type="button" aria-label="关闭">×</button>
+  <div class="welcome-emoji" aria-hidden="true">👋</div>
+  <p class="welcome-title" data-welcome-title>欢迎来访的朋友！</p>
+  <p class="welcome-time" data-welcome-time></p>
+  <p class="welcome-msg" data-welcome-msg></p>
+  <span class="welcome-progress"></span>
+</div>
+
+<style is:global>
+  .welcome {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 90;
+    width: 250px;
+    padding: 16px 18px 18px;
+    overflow: hidden;
+    border: 1px solid var(--c-border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--c-panel-solid) 55%, transparent);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    box-shadow: var(--shadow-2);
+    animation: welcome-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+
+  .welcome[hidden] {
+    display: none;
+  }
+
+  .welcome.leaving {
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  @keyframes welcome-in {
+    from {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+  }
+
+  .welcome-emoji {
+    font-size: 26px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .welcome-title {
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .welcome-title b {
+    color: var(--c-accent);
+    word-break: break-all;
+  }
+
+  .welcome-time {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--c-text-3);
+  }
+
+  .welcome-msg {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--c-text-2);
+  }
+
+  .welcome-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--c-text-3);
+  }
+
+  .welcome-close:hover {
+    background: var(--c-soft);
+    color: var(--c-text);
+  }
+
+  /* 底部进度条走完就自动收起，鼠标悬停时暂停 */
+  .welcome-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--c-accent);
+    transform-origin: left;
+    animation: welcome-progress var(--welcome-duration) linear forwards;
+  }
+
+  .welcome:hover .welcome-progress {
+    animation-play-state: paused;
+  }
+
+  @keyframes welcome-progress {
+    to {
+      transform: scaleX(0);
+    }
+  }
+
+  @media (max-width: 959px) {
+    .welcome {
+      top: 64px;
+      right: 12px;
+      width: min(250px, calc(100vw - 24px));
+    }
+  }
+</style>
+
+<script>
+  type Greeting = { from: number; to: number; text: string };
+
+  const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+
+  // 访客是从哪个网站点进来的，直接打开或者从本站跳转就返回 null
+  function referrerName(sites: Record<string, string>) {
+    let host: string;
+    try {
+      host = new URL(document.referrer).hostname;
+    } catch {
+      return null;
+    }
+    if (host === location.hostname) return null;
+    host = host.replace(/^www\./, '');
+    const key = Object.keys(sites).find((k) => host === k || host.endsWith(`.${k}`));
+    return key ? sites[key] : host;
+  }
+
+  function hide(box: HTMLElement) {
+    box.classList.add('leaving');
+    setTimeout(() => (box.hidden = true), 300);
+  }
+
+  function show(box: HTMLElement) {
+    const from = referrerName(JSON.parse(box.dataset.sites || '{}'));
+    if (from) {
+      const b = document.createElement('b');
+      b.textContent = from;
+      box.querySelector('[data-welcome-title]')!.replaceChildren('欢迎从 ', b, ' 来的朋友！');
+    }
+
+    const now = new Date();
+    const hour = now.getHours();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const greetings: Greeting[] = JSON.parse(box.dataset.greetings || '[]');
+    box.querySelector('[data-welcome-time]')!.textContent = `现在是 ${pad(hour)}:${pad(now.getMinutes())} · 星期${WEEK[now.getDay()]}`;
+    box.querySelector('[data-welcome-msg]')!.textContent = greetings.find((g) => hour >= g.from && hour < g.to)?.text ?? '';
+
+    box.hidden = false;
+    box.querySelector('.welcome-close')!.addEventListener('click', () => hide(box));
+    box.querySelector('.welcome-progress')!.addEventListener('animationend', () => hide(box));
+  }
+
+  // 同一次浏览只弹一次，刷新和站内跳转都不会再出现
+  let seen = false;
+  try {
+    seen = sessionStorage.getItem('welcomed') === '1';
+    sessionStorage.setItem('welcomed', '1');
+  } catch {}
+  const box = document.getElementById('welcome');
+  if (box && !seen) show(box);
+</script>

@@ -1,0 +1,334 @@
+---
+import { nav, sidebarLinks, site } from '../config';
+import Badges from './Badges.astro';
+import Icon from './Icon.astro';
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/'
+    ? path === '/' || path.startsWith('/page/') || path.startsWith('/posts/')
+    : path.startsWith(href.replace(/\/$/, ''));
+
+// 简介里括号包着的颜文字不许拆成两行
+const subtitleParts = site.subtitle.split(/(\([^)]*\)\S*)/).filter(Boolean);
+
+const themes = [
+  { key: 'light', label: '浅色模式', icon: 'sun' },
+  { key: 'system', label: '跟随系统', icon: 'device-desktop' },
+  { key: 'dark', label: '深色模式', icon: 'moon' },
+];
+---
+
+<aside class="side" transition:animate="none">
+  <div class="side-nav">
+    <div class="profile">
+      <a class="profile-avatar" href="/about/" aria-label="关于博主">
+        <img src={site.avatarLarge} alt={site.author} width="480" height="480" />
+        <span class="profile-hover"><Icon name="id" size={44} /></span>
+      </a>
+      <a class="profile-name" href="/">{site.title}</a>
+      <span class="profile-bar" aria-hidden="true"></span>
+      <p class="profile-sub">
+        {subtitleParts.map((part) => (part.startsWith('(') ? <span class="nowrap">{part}</span> : part))}
+      </p>
+      <a class="profile-link" href={`https://github.com/${site.github}`} target="_blank" rel="noopener">
+        <Icon name="brand-github" /> GitHub
+      </a>
+    </div>
+
+    <nav class="nav" aria-label="主导航">
+      <button class="nav-item search-btn" type="button" data-search-open>
+        <Icon name="search" />
+        <span class="nav-text">搜索</span>
+        <kbd data-search-kbd>Ctrl K</kbd>
+      </button>
+      <menu>
+        {
+          nav.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class:list={['nav-item', { active: isActive(item.href) }]}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+              >
+                <Icon name={item.icon} />
+                <span class="nav-text">{item.text}</span>
+              </a>
+            </li>
+          ))
+        }
+      </menu>
+    </nav>
+    <Badges class="drawer-badges" />
+  </div>
+
+  {
+    Astro.slots.has('default') && (
+      <div class="side-widgets">
+        <slot />
+      </div>
+    )
+  }
+
+  <div class="side-foot">
+    <Badges />
+    <div class="theme-toggle" role="group" aria-label="主题">
+      {
+        themes.map((t) => (
+          <button type="button" data-theme-set={t.key} aria-label={t.label} title={t.label}>
+            <Icon name={t.icon} />
+          </button>
+        ))
+      }
+    </div>
+    <div class="side-links">
+      {
+        sidebarLinks.map((link) => (
+          <a href={link.href} aria-label={link.name} title={link.name} target={link.href.startsWith('http') ? '_blank' : undefined} rel="noopener">
+            <Icon name={link.icon} />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</aside>
+
+<style is:global>
+  .side-nav {
+    padding: 0 14px;
+  }
+
+  .profile {
+    margin-top: 14px;
+    padding: 10px 10px 14px;
+    border: 1px solid var(--c-border-soft);
+    border-radius: 12px;
+    background: var(--c-widget);
+    text-align: center;
+  }
+
+  .profile-avatar {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .profile-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition:
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.4s ease;
+  }
+
+  /* 鼠标移上去：头像微微放大变糊，中间浮出名片图标 */
+  .profile-hover {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgb(0 0 0 / 0.32);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .profile-hover .icon {
+    transform: scale(0.75);
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .profile-avatar:hover img {
+    transform: scale(1.06);
+    filter: blur(1.5px);
+  }
+
+  .profile-avatar:hover .profile-hover {
+    opacity: 1;
+  }
+
+  .profile-avatar:hover .profile-hover .icon {
+    transform: scale(1);
+  }
+
+  .profile-name {
+    display: block;
+    margin-top: 12px;
+    font-family: var(--font-title);
+    font-size: 1.35em;
+    color: var(--c-text);
+  }
+
+  .profile-bar {
+    display: block;
+    width: 28px;
+    height: 4px;
+    margin: 6px auto 8px;
+    border-radius: 2px;
+    background: var(--c-accent);
+  }
+
+  .profile-sub {
+    font-size: 0.85em;
+    line-height: 1.5;
+    color: var(--c-text-2);
+    text-wrap: balance;
+  }
+
+  .profile-sub .nowrap {
+    white-space: nowrap;
+  }
+
+  .profile-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 0.9em;
+    font-weight: 700;
+    color: var(--c-text);
+    transition: color 0.2s;
+  }
+
+  .profile-link:hover {
+    color: var(--c-accent);
+  }
+
+  .nav {
+    font-size: 0.92em;
+  }
+
+  .nav menu {
+    display: grid;
+    gap: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: var(--c-text-2);
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  .nav-item .icon {
+    font-size: 1.4em;
+  }
+
+  .nav-item:hover,
+  .nav-item.active {
+    background: var(--c-soft-2);
+    color: var(--c-text);
+  }
+
+  .nav-item.active {
+    font-weight: 600;
+  }
+
+  .nav-item.active::after {
+    content: '⦁';
+    width: 1em;
+    text-align: center;
+    color: var(--c-text-3);
+  }
+
+  .nav-text {
+    flex: 1;
+    text-align: start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .search-btn {
+    margin: 16px 0 12px;
+    opacity: 0.6;
+    outline: 2px solid var(--c-border);
+    outline-offset: -2px;
+    cursor: text;
+  }
+
+  .search-btn:hover {
+    opacity: 1;
+    outline-color: transparent;
+  }
+
+  /* 侧栏内容少时，底部这块贴着屏幕底边 */
+  .side-foot {
+    margin-top: auto;
+    display: grid;
+    gap: 12px;
+    padding: 12px 14px 16px;
+    border-top: 1px solid var(--c-border-soft);
+  }
+
+  .theme-toggle {
+    display: flex;
+    gap: 3px;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 2px;
+    border: 1px solid var(--c-border);
+    border-radius: 1rem;
+    background: var(--c-soft);
+  }
+
+  .theme-toggle button {
+    padding: 4px 16px;
+    border-radius: 1rem;
+    color: var(--c-text-2);
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .theme-toggle button:hover {
+    color: var(--c-text);
+  }
+
+  :root[data-theme-pref='light'] [data-theme-set='light'],
+  :root[data-theme-pref='system'] [data-theme-set='system'],
+  :root[data-theme-pref='dark'] [data-theme-set='dark'] {
+    background: var(--c-panel-solid);
+    color: var(--c-text);
+    box-shadow: var(--shadow-1);
+  }
+
+  .side-links {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .side-links a {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    color: var(--c-text-2);
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  .side-links a:hover {
+    background: var(--c-soft);
+    color: var(--c-text);
+  }
+
+  /* 徽章在电脑上放侧栏底部，手机上底部收起来了，就在抽屉菜单里再放一份 */
+  .side-nav .drawer-badges {
+    display: none;
+  }
+
+  @media (max-width: 959px) {
+    .side-nav .drawer-badges {
+      display: flex;
+      margin: 24px 0 20px;
+    }
+  }
+</style>

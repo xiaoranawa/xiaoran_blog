@@ -1,0 +1,42 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Icon from '../components/Icon.astro';
+import '../styles/markdown.css';
+import BaseLayout from './BaseLayout.astro';
+
+// 给 src/pages 里的 .md 页面用，比如「关于」
+interface Props {
+  frontmatter: { title: string; description?: string; icon?: string };
+  headings?: MarkdownHeading[];
+}
+
+const { frontmatter, headings } = Astro.props;
+---
+
+<BaseLayout title={frontmatter.title} description={frontmatter.description} headings={headings}>
+  <article class="card">
+    <header class="page-head md-page-head">
+      <h1 class="page-title"><Icon name={frontmatter.icon ?? 'file-text'} /> {frontmatter.title}</h1>
+      {frontmatter.description && <p class="page-desc">{frontmatter.description}</p>}
+    </header>
+    <div class="markdown-body md-page-body">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>
+
+<style is:global>
+  .md-page-head {
+    border-bottom: 1px solid var(--c-border-soft);
+  }
+
+  .md-page-body {
+    padding: 24px 28px 32px;
+  }
+
+  @media (max-width: 640px) {
+    .md-page-body {
+      padding: 18px 18px 24px;
+    }
+  }
+</style>

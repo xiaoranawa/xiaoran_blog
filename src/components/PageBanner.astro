@@ -1,0 +1,114 @@
+---
+interface Props {
+  image: string;
+  tag: string;
+  title: string;
+  // 图片比横幅高时露出哪一段，写法同 object-position
+  focus?: string;
+}
+
+const { image, tag, title, focus = 'center' } = Astro.props;
+---
+
+<!-- 朋友圈、友链页顶部的大图横幅：左上标签和标题，下面一行小字，右下角放个按钮 -->
+<section class="card page-banner">
+  <img class="page-banner-img" src={image} alt="" decoding="async" style={`object-position: ${focus}`} />
+  <div class="page-banner-top">
+    <span class="page-banner-tag">{tag}</span>
+    <h1 class="page-banner-title">{title}</h1>
+  </div>
+  <slot />
+</section>
+
+<style is:global>
+  .page-banner {
+    position: relative;
+    height: 240px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 22px 28px 20px;
+    color: #fff;
+  }
+
+  .page-banner-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .page-banner:hover .page-banner-img {
+    transform: scale(1.04);
+  }
+
+  .page-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgb(0 0 0 / 0.2), transparent 40%, rgb(0 0 0 / 0.5));
+  }
+
+  .page-banner > :not(img) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-banner-tag {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  .page-banner-title {
+    font-family: var(--font-title);
+    font-size: 2rem;
+    font-weight: 400;
+    text-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+  }
+
+  .page-banner-sub {
+    max-width: 70%;
+    font-size: 13px;
+    opacity: 0.92;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.4);
+  }
+
+  .page-banner-link {
+    position: absolute !important;
+    right: 20px;
+    bottom: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.2);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+
+  .page-banner-link:hover {
+    background: rgb(255 255 255 / 0.35);
+  }
+
+  @media (max-width: 640px) {
+    .page-banner {
+      height: 200px;
+      padding: 18px 18px 16px;
+    }
+
+    .page-banner-title {
+      font-size: 1.6rem;
+    }
+
+    .page-banner-sub {
+      max-width: 55%;
+    }
+  }
+</style>

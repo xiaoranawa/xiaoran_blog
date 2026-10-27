@@ -1,22 +1,21 @@
 ---
 import Icon from '../components/Icon.astro';
+import Loader from '../components/Loader.astro';
+import PageBanner from '../components/PageBanner.astro';
 import { background, circleApi } from '../config';
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="朋友圈" description="订阅朋友们的最新文章">
-  <section class="card fc-banner">
-    <img class="fc-banner-img" src={background.api} alt="" decoding="async" />
-    <div class="fc-banner-top">
-      <span class="fc-tag">朋友圈</span>
-      <h1 class="fc-title">最新文章订阅</h1>
-    </div>
-    <p class="fc-sub" data-fc-sub>用 RSS 订阅朋友们的最新文章</p>
-    <a class="fc-about" href="/about/"><Icon name="user-circle" /> 关于本人</a>
-  </section>
+  <PageBanner image={background.api} tag="朋友圈" title="最新文章订阅">
+    <p class="page-banner-sub" data-fc-sub>用 RSS 订阅朋友们的最新文章</p>
+    <a class="page-banner-link" href="/about/"><Icon name="user-circle" /> 关于本人</a>
+  </PageBanner>
 
   <div class="fc" data-api={circleApi}>
-    <p class="card fc-status" data-fc-status>正在拉取朋友们的最新文章…</p>
+    <div class="card fc-status" data-fc-status>
+      <Loader text="正在拉取朋友们的最新文章…" />
+    </div>
     <div class="fc-body" hidden>
       <div class="fc-head">
         <span><Icon name="fish-hook" /> 钓鱼</span>
@@ -40,82 +39,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <style is:global>
-  .fc-banner {
-    position: relative;
-    height: 240px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 22px 28px 20px;
-    color: #fff;
-  }
-
-  .fc-banner-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .fc-banner:hover .fc-banner-img {
-    transform: scale(1.04);
-  }
-
-  .fc-banner::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgb(0 0 0 / 0.2), transparent 40%, rgb(0 0 0 / 0.5));
-  }
-
-  .fc-banner > :not(img) {
-    position: relative;
-    z-index: 1;
-  }
-
-  .fc-tag {
-    font-size: 12px;
-    opacity: 0.85;
-  }
-
-  .fc-title {
-    font-family: var(--font-title);
-    font-size: 2rem;
-    font-weight: 400;
-    text-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
-  }
-
-  .fc-sub {
-    max-width: 70%;
-    font-size: 13px;
-    opacity: 0.92;
-    text-shadow: 0 1px 6px rgb(0 0 0 / 0.4);
-  }
-
-  .fc-about {
-    position: absolute !important;
-    right: 20px;
-    bottom: 16px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.2);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    font-size: 13px;
-    font-weight: 600;
-    transition: background-color 0.2s;
-  }
-
-  .fc-about:hover {
-    background: rgb(255 255 255 / 0.35);
-  }
-
   .fc-status {
     padding: 40px 16px;
     text-align: center;
@@ -315,21 +238,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   .fc-load[hidden] {
     display: none;
-  }
-
-  @media (max-width: 640px) {
-    .fc-banner {
-      height: 200px;
-      padding: 18px 18px 16px;
-    }
-
-    .fc-title {
-      font-size: 1.6rem;
-    }
-
-    .fc-sub {
-      max-width: 55%;
-    }
   }
 </style>
 

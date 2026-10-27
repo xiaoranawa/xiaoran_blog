@@ -1,0 +1,57 @@
+---
+import Loader from './Loader.astro';
+---
+
+<div class="page-loader" id="page-loader" transition:persist aria-hidden="true">
+  <Loader text="正在加载…" size={72} />
+</div>
+
+<style is:global>
+  /* 站内跳转时屏幕正中的加载卡片，不挡点击 */
+  .page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 105;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.2s,
+      visibility 0s 0.2s;
+  }
+
+  .page-loader.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s;
+  }
+
+  .page-loader .loader {
+    padding: 20px 28px 16px;
+    border: 1px solid var(--c-border);
+    border-radius: 16px;
+    background: var(--c-panel-solid);
+    box-shadow: var(--shadow-2);
+    font-size: 14px;
+  }
+</style>
+
+<script>
+  const box = document.getElementById('page-loader')!;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  // 超过 300 毫秒还没加载完才出来，快的时候不闪一下
+  document.addEventListener('astro:before-preparation', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => box.classList.add('show'), 300);
+  });
+
+  const hide = () => {
+    clearTimeout(timer);
+    box.classList.remove('show');
+  };
+  document.addEventListener('astro:after-preparation', hide);
+  document.addEventListener('astro:page-load', hide);
+</script>

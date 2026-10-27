@@ -1,0 +1,40 @@
+---
+interface Props {
+  text?: string;
+  size?: number;
+}
+
+const { text = '加载中…', size = 88 } = Astro.props;
+---
+
+<div class="loader" role="status">
+  <img class="loader-cat" src="/img/loading-cat.webp" alt="" width={size} height={size} />
+  {text && <span class="loader-text">{text}</span>}
+</div>
+
+<style is:global>
+  .loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--c-text-3);
+  }
+
+  /* 长猫的头在追尾巴，所以逆时针转 */
+  .loader-cat {
+    animation: loader-spin 1.2s linear infinite;
+  }
+
+  @keyframes loader-spin {
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader-cat {
+      animation-duration: 4s;
+    }
+  }
+</style>

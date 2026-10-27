@@ -1,6 +1,7 @@
 ---
 import Icon from '../components/Icon.astro';
 import Identicon from '../components/Identicon.astro';
+import PageBanner from '../components/PageBanner.astro';
 import { site } from '../config';
 import { friendGroups } from '../data/friends';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -14,10 +15,10 @@ const mine = {
 ---
 
 <BaseLayout title="友链" description="朋友们的小站">
-  <section class="card page-head">
-    <h1 class="page-title"><Icon name="link" /> 友链</h1>
-    <p class="page-desc">海内存知己，天涯若比邻。</p>
-  </section>
+  <PageBanner image="/img/friends-banner.webp" tag="友链" title="海内存知己，天涯若比邻">
+    <p class="page-banner-sub">欢迎来交换友链～</p>
+    <a class="page-banner-link" href="#apply"><Icon name="heart" /> 申请友链</a>
+  </PageBanner>
 
   {
     friendGroups.map((group) => (
@@ -46,7 +47,7 @@ const mine = {
     ))
   }
 
-  <section class="card">
+  <section class="card" id="apply">
     <div class="box-header"><Icon name="heart" /> 申请友链</div>
     <div class="fr-apply">
       <p>欢迎交换友链！在 GitHub 上找到我，或者通过页脚的邮箱联系，附上下面这样的信息就好：</p>

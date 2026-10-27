@@ -153,7 +153,7 @@ export const comments = {
 // 朋友圈的数据接口，就是 rss-server 文件夹里那个 Go 服务，订阅哪些博客在它的 config.json 里配
 export const circleApi = 'https://rss.xiaoowo.top/api/circle';
 
-// 不蒜子访问统计，也可以换成兼容的 https://events.vercount.one/js
-export const counterScript = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+// 访问统计用 Vercount，和不蒜子兼容；不蒜子的接口经常挂（2026-10 测过返回 502）
+export const counterScript = 'https://events.vercount.one/js';
 
 export const archiveCardMonths = 8;
